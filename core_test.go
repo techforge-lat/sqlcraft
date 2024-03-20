@@ -72,6 +72,17 @@ func TestBuild(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "delete with RETURNING",
+			args: args{
+				query: NewDelete("users", WithReturning("id", "created_at")),
+			},
+			want: SQLCraft{
+				Sql:  "DELETE FROM users RETURNING id, created_at",
+				Args: []any{},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

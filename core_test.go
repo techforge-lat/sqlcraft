@@ -39,6 +39,39 @@ func TestBuild(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "update with default returnind option",
+			args: args{
+				query: NewUpdate("users", []string{"id", "name", "email", "password"}, WithReturning("id", "created_at")),
+			},
+			want: SQLCraft{
+				Sql:  "UPDATE users SET id = $1, name = $2, email = $3, password = $4 RETURNING id, created_at",
+				Args: []any{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "update with default from option",
+			args: args{
+				query: NewUpdate("users", []string{"id", "name", "email", "password"}, WithFrom("roles")),
+			},
+			want: SQLCraft{
+				Sql:  "UPDATE users SET id = $1, name = $2, email = $3, password = $4 FROM roles",
+				Args: []any{},
+			},
+			wantErr: false,
+		},
+		{
+			name: "update with default from option with table alias",
+			args: args{
+				query: NewUpdate("users", []string{"id", "name", "email", "password"}, WithFrom("roles r")),
+			},
+			want: SQLCraft{
+				Sql:  "UPDATE users SET id = $1, name = $2, email = $3, password = $4 FROM roles r",
+				Args: []any{},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -68,12 +68,3 @@ func (i Insert) optionKeys() optionKeys {
 func (i Insert) Err() error {
 	return i.err
 }
-
-func WithReturning(columns ...string) Option {
-	return func(option *options) error {
-		option.sql = fmt.Sprintf("RETURNING %s", strings.Join(columns, ", "))
-		option.key = returning
-
-		return nil
-	}
-}

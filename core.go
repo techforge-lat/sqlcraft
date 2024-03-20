@@ -40,6 +40,10 @@ func Build(query Query, opts ...Option) (SQLCraft, error) {
 		if err := opt(&option); err != nil {
 			return SQLCraft{}, err
 		}
+		if option.err != nil {
+			return SQLCraft{}, option.err
+		}
+
 		if option.key.IsInList(query.optionKeys()) {
 			return SQLCraft{}, ErrDuplicatedOption
 		}

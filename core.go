@@ -11,9 +11,10 @@ var (
 )
 
 type Query interface {
-	defaultOpts() []Option
+	defaultOpts() Options
 	optionKeys() optionKeys
 	sql() string
+	Err() error
 }
 
 type SQLCraft struct {
@@ -22,8 +23,16 @@ type SQLCraft struct {
 }
 
 func Build(query Query, opts ...Option) (SQLCraft, error) {
+	if query.Err() != nil {
+		return SQLCraft{}, query.Err()
+	}
+
+	// TODO: validate that the option can be use for the `query`
+
 	sql := strings.Builder{}
 	sql.WriteString(query.sql())
+
+	opts = append(query.defaultOpts(), opts...)
 
 	args := []any{}
 	for _, opt := range opts {

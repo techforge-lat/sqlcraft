@@ -34,3 +34,5 @@ type options struct {
 }
 
 type Option func(option *options) error
+
+type Options []Option

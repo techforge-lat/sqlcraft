@@ -7,12 +7,13 @@ import (
 )
 
 type Insert struct {
-	query      string
-	optionKeys optionKeys
-	err        error
+	query          string
+	defaultOptions Options
+	optionKeyList  optionKeys
+	err            error
 }
 
-func NewInsert(tableName string, columns []string) Insert {
+func NewInsert(tableName string, columns []string, defualtOpts ...Option) Insert {
 	if tableName == "" {
 		return Insert{
 			err: ErrMissingTableName,
@@ -40,7 +41,6 @@ func NewInsert(tableName string, columns []string) Insert {
 			args.WriteString(", ")
 		}
 	}
-
 	query.WriteString(strings.Join(columns, ", "))
 	query.WriteString(")")
 	query.WriteString(" VALUES (")
@@ -48,12 +48,25 @@ func NewInsert(tableName string, columns []string) Insert {
 	query.WriteString(")")
 
 	return Insert{
-		query: query.String(),
+		query:          query.String(),
+		defaultOptions: defualtOpts,
 	}
 }
 
 func (i Insert) sql() string {
 	return i.query
+}
+
+func (i Insert) defaultOpts() Options {
+	return i.defaultOptions
+}
+
+func (i Insert) optionKeys() optionKeys {
+	return i.optionKeyList
+}
+
+func (i Insert) Err() error {
+	return i.err
 }
 
 func WithReturning(columns ...string) Option {

@@ -13,6 +13,7 @@ var (
 type Query interface {
 	defaultOpts() Options
 	optionKeys() optionKeys
+	paramsCount() uint
 	sql() string
 	Err() error
 }
@@ -28,6 +29,7 @@ func Build(query Query, opts ...Option) (SQLCraft, error) {
 	}
 
 	// TODO: validate that the option can be use for the `query`
+	// TODO: don't allow option duplicates
 
 	sql := strings.Builder{}
 	sql.WriteString(query.sql())
@@ -35,11 +37,22 @@ func Build(query Query, opts ...Option) (SQLCraft, error) {
 	opts = append(query.defaultOpts(), opts...)
 
 	args := []any{}
+	excludeWhereKeyword := false
 	for _, opt := range opts {
 		var option options
+		option.excludeWhereKeyword = excludeWhereKeyword
+		option.paramCountStartFrom = uint(len(args)) + query.paramsCount()
+
 		if err := opt(&option); err != nil {
 			return SQLCraft{}, err
 		}
+
+		// in case the WHERE option was used as a default
+		// and then the client still sends extra filters
+		if option.key == where {
+			excludeWhereKeyword = true
+		}
+
 		if option.err != nil {
 			return SQLCraft{}, option.err
 		}

@@ -9,6 +9,7 @@ type Update struct {
 	query          string
 	defaultOptions Options
 	optionKeyList  optionKeys
+	argsCount      uint
 	err            error
 }
 
@@ -44,6 +45,7 @@ func NewUpdate(tableName string, columns []string, defualtOpts ...Option) Update
 	return Update{
 		query:          query.String(),
 		defaultOptions: defualtOpts,
+		argsCount:      uint(columnsLength),
 	}
 }
 
@@ -57,6 +59,10 @@ func (u Update) defaultOpts() Options {
 
 func (u Update) optionKeys() optionKeys {
 	return u.optionKeyList
+}
+
+func (u Update) paramsCount() uint {
+	return u.argsCount
 }
 
 func (u Update) Err() error {

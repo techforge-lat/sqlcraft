@@ -1,6 +1,7 @@
 package sqlcraft
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"strings"
@@ -37,6 +38,9 @@ type options struct {
 	key   optionKey
 	order uint
 	err   error
+
+	excludeWhereKeyword bool
+	paramCountStartFrom uint
 }
 
 type Option func(option *options) error
@@ -69,6 +73,35 @@ func WithFrom(expression string) Option {
 
 		option.sql = fmt.Sprintf("FROM %s", expression)
 		option.key = from
+
+		return nil
+	}
+}
+
+type Sorter interface {
+	Field() string
+	Order() string
+}
+
+func WithSort(allowedColumns AllowedColumns, items ...Sorter) Option {
+	return func(option *options) error {
+		if len(items) == 0 {
+			return errors.New("sort items cannot be empty in ORDER BY option")
+		}
+
+		builder := bytes.Buffer{}
+		builder.WriteString(" ORDER BY ")
+		for _, v := range items {
+			builder.WriteString(v.Field())
+			builder.WriteString(" ")
+			builder.WriteString(v.Order())
+			builder.WriteString(", ")
+		}
+
+		// removes the last `, `
+		builder.Truncate(builder.Len() - 2)
+		option.sql = builder.String()
+		option.key = order
 
 		return nil
 	}

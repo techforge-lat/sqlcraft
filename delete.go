@@ -41,6 +41,10 @@ func (d Delete) optionKeys() optionKeys {
 	return d.optionKeyList
 }
 
+func (d Delete) paramsCount() uint {
+	return 0
+}
+
 func (d Delete) Err() error {
 	return d.err
 }

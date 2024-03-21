@@ -10,6 +10,7 @@ type Insert struct {
 	query          string
 	defaultOptions Options
 	optionKeyList  optionKeys
+	argsCount      uint
 	err            error
 }
 
@@ -50,6 +51,7 @@ func NewInsert(tableName string, columns []string, defualtOpts ...Option) Insert
 	return Insert{
 		query:          query.String(),
 		defaultOptions: defualtOpts,
+		argsCount:      uint(columnsLength),
 	}
 }
 
@@ -63,6 +65,10 @@ func (i Insert) defaultOpts() Options {
 
 func (i Insert) optionKeys() optionKeys {
 	return i.optionKeyList
+}
+
+func (i Insert) paramsCount() uint {
+	return i.argsCount
 }
 
 func (i Insert) Err() error {

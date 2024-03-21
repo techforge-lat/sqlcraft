@@ -47,7 +47,11 @@ type FilterItem interface {
 
 type FilterItems []FilterItem
 
-func WithWhere(allowedColumns AllowedColumns, items ...FilterItem) Option {
+func WithWhere[T FilterItem](items ...T) Option {
+	return WithSafeWhere(nil, items...)
+}
+
+func WithSafeWhere[T FilterItem](allowedColumns AllowedColumns, items ...T) Option {
 	return func(option *options) error {
 		if len(items) == 0 {
 			return errors.New("filter items cannot be empty in WHERE option")
@@ -62,9 +66,15 @@ func WithWhere(allowedColumns AllowedColumns, items ...FilterItem) Option {
 
 		count := int(option.paramCountStartFrom)
 		for index, item := range items {
-			columnName, ok := allowedColumns[item.GetField()]
-			if !ok {
-				return fmt.Errorf("field %s not found, %w", item.GetField(), ErrInvalidFieldName)
+			columnName := item.GetField()
+
+			if allowedColumns != nil {
+				column, ok := allowedColumns[item.GetField()]
+				if !ok {
+					return fmt.Errorf("field %s not found, %w", item.GetField(), ErrInvalidFieldName)
+				}
+
+				columnName = column
 			}
 
 			if item.HasGroupOpen() {

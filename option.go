@@ -22,12 +22,13 @@ func (o optionKey) IsInList(list optionKeys) bool {
 }
 
 const (
-	returning optionKey = "RETURNING"
-	where     optionKey = "WHERE"
-	order     optionKey = "ORDER"
-	limit     optionKey = "LIMIT"
-	offset    optionKey = "OFFSET"
-	from      optionKey = "FROM"
+	returning  optionKey = "RETURNING"
+	where      optionKey = "WHERE"
+	order      optionKey = "ORDER"
+	limit      optionKey = "LIMIT"
+	offset     optionKey = "OFFSET"
+	pagination optionKey = "PAGINATION"
+	from       optionKey = "FROM"
 )
 
 type optionKeys []optionKey
@@ -102,6 +103,23 @@ func WithSort(allowedColumns AllowedColumns, items ...Sorter) Option {
 		builder.Truncate(builder.Len() - 2)
 		option.sql = builder.String()
 		option.key = order
+
+		return nil
+	}
+}
+
+func WithPagination(limit, offset uint) Option {
+	return func(option *options) error {
+		if limit == 0 || offset == 0 {
+			return nil
+		}
+
+		limitParamNumber := option.paramCountStartFrom + 1
+		offsetParamNumber := limitParamNumber + 1
+
+		option.sql = fmt.Sprintf("LIMIT $%d OFFSET $%d", limitParamNumber, offsetParamNumber)
+		option.args = append(option.args, limit, offset)
+		option.key = pagination
 
 		return nil
 	}

@@ -13,6 +13,9 @@ type Update struct {
 	err            error
 }
 
+// NewUpdate creates a base UPDATE sql expression with optional default expressions
+// When executing the sql, you must first pass the args for the SET expression
+// and then pass the args for the used option expresion in the corresponding order
 func NewUpdate(tableName string, columns []string, defualtOpts ...Option) Update {
 	if tableName == "" {
 		return Update{

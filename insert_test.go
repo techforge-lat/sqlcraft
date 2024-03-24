@@ -13,7 +13,7 @@ func TestNewInsert(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    Insert
+		want    InsertQuery
 		wantErr bool
 	}{
 		{
@@ -22,7 +22,7 @@ func TestNewInsert(t *testing.T) {
 				tableName: "users",
 				columns:   []string{"id", "name", "email", "password"},
 			},
-			want: Insert{
+			want: InsertQuery{
 				query: "INSERT INTO users (id, name, email, password) VALUES ($1, $2, $3, $4)",
 			},
 		},
@@ -33,7 +33,7 @@ func TestNewInsert(t *testing.T) {
 				columns:   []string{"id"},
 			},
 
-			want: Insert{
+			want: InsertQuery{
 				query: "INSERT INTO users (id) VALUES ($1)",
 			},
 		},
@@ -43,7 +43,7 @@ func TestNewInsert(t *testing.T) {
 				tableName: "users",
 				columns:   nil,
 			},
-			want: Insert{
+			want: InsertQuery{
 				err: ErrMissingColumns,
 			},
 			wantErr: true,
@@ -54,7 +54,7 @@ func TestNewInsert(t *testing.T) {
 				tableName: "",
 				columns:   nil,
 			},
-			want: Insert{
+			want: InsertQuery{
 				err: ErrMissingTableName,
 			},
 			wantErr: true,
@@ -62,7 +62,7 @@ func TestNewInsert(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewInsert(tt.args.tableName, tt.args.columns)
+			got := Insert(tt.args.tableName, tt.args.columns)
 			if got.query != tt.want.query {
 				t.Errorf("NewInsert() = %v, want %v", got.query, tt.want.query)
 			}

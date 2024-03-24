@@ -5,32 +5,32 @@ import (
 	"strings"
 )
 
-// TODO: select with own sql query just to add options to it
-
-type Select struct {
+type SelectQuery struct {
 	query          string
-	defaultOptions Options
-	optionKeyList  optionKeys
+	defaultOptions SQLClauses
 	argsCount      uint
 	err            error
 }
 
-func NewRawSelect(sql string, defualtOpts ...Option) Select {
-	return Select{
+func RawSelect(sql string, defualtOpts ...SQLClause) SelectQuery {
+	hasWhere := strings.Contains(strings.ToUpper(sql), strings.ToUpper(string(where)))
+	defualtOpts = append(defualtOpts, withExcludeWhereKeyword(hasWhere))
+
+	return SelectQuery{
 		query:          sql,
 		defaultOptions: defualtOpts,
 	}
 }
 
-func NewSelect(tableName string, columns []string, defualtOpts ...Option) Select {
+func Select(tableName string, columns []string, defualtOpts ...SQLClause) SelectQuery {
 	if tableName == "" {
-		return Select{
+		return SelectQuery{
 			err: ErrMissingTableName,
 		}
 	}
 
 	if len(columns) == 0 {
-		return Select{
+		return SelectQuery{
 			err: ErrMissingColumns,
 		}
 	}
@@ -41,28 +41,24 @@ func NewSelect(tableName string, columns []string, defualtOpts ...Option) Select
 	query.WriteString(" FROM ")
 	query.WriteString(tableName)
 
-	return Select{
+	return SelectQuery{
 		query:          query.String(),
 		defaultOptions: defualtOpts,
 	}
 }
 
-func (i Select) sql() string {
+func (i SelectQuery) sql() string {
 	return i.query
 }
 
-func (i Select) defaultOpts() Options {
+func (i SelectQuery) defaultOpts() SQLClauses {
 	return i.defaultOptions
 }
 
-func (i Select) optionKeys() optionKeys {
-	return i.optionKeyList
-}
-
-func (i Select) paramsCount() uint {
+func (i SelectQuery) paramsCount() uint {
 	return i.argsCount
 }
 
-func (i Select) Err() error {
+func (i SelectQuery) Err() error {
 	return i.err
 }

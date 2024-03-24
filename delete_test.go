@@ -8,12 +8,12 @@ import (
 func TestNewDelete(t *testing.T) {
 	type args struct {
 		tableName   string
-		defualtOpts []Option
+		defualtOpts []SQLClause
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    Delete
+		want    DeleteQuery
 		wantErr bool
 	}{
 		{
@@ -21,7 +21,7 @@ func TestNewDelete(t *testing.T) {
 			args: args{
 				tableName: "users",
 			},
-			want: Delete{
+			want: DeleteQuery{
 				query: "DELETE FROM users",
 			},
 			wantErr: false,
@@ -31,7 +31,7 @@ func TestNewDelete(t *testing.T) {
 			args: args{
 				tableName: "ONLY users",
 			},
-			want: Delete{
+			want: DeleteQuery{
 				query: "DELETE FROM ONLY users",
 			},
 			wantErr: false,
@@ -40,7 +40,7 @@ func TestNewDelete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewDelete(tt.args.tableName, tt.args.defualtOpts...)
+			got := Delete(tt.args.tableName, tt.args.defualtOpts...)
 			if got.query != tt.want.query {
 				t.Errorf("NewInsert() = %v, want %v", got.query, tt.want.query)
 			}

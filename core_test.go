@@ -8,21 +8,21 @@ import (
 func TestBuild(t *testing.T) {
 	type args struct {
 		query Query
-		opts  []Option
+		opts  []SQLClause
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    SQLCraft
+		want    SQLQuery
 		wantErr bool
 	}{
 		{
 			name: "insert with returning option",
 			args: args{
-				query: NewInsert("users", []string{"id", "name", "email", "password"}),
-				opts:  []Option{WithReturning("id", "created_at")},
+				query: Insert("users", []string{"id", "name", "email", "password"}),
+				opts:  []SQLClause{WithReturning("id", "created_at")},
 			},
-			want: SQLCraft{
+			want: SQLQuery{
 				Sql:  "INSERT INTO users (id, name, email, password) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
 				Args: []any{},
 			},
@@ -31,9 +31,9 @@ func TestBuild(t *testing.T) {
 		{
 			name: "insert with default options",
 			args: args{
-				query: NewInsert("users", []string{"id", "name", "email", "password"}, WithReturning("id", "created_at")),
+				query: Insert("users", []string{"id", "name", "email", "password"}, WithReturning("id", "created_at")),
 			},
-			want: SQLCraft{
+			want: SQLQuery{
 				Sql:  "INSERT INTO users (id, name, email, password) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
 				Args: []any{},
 			},
@@ -42,9 +42,9 @@ func TestBuild(t *testing.T) {
 		{
 			name: "update with default returnind option",
 			args: args{
-				query: NewUpdate("users", []string{"id", "name", "email", "password"}, WithReturning("id", "created_at")),
+				query: Update("users", []string{"id", "name", "email", "password"}, WithReturning("id", "created_at")),
 			},
-			want: SQLCraft{
+			want: SQLQuery{
 				Sql:  "UPDATE users SET id = $1, name = $2, email = $3, password = $4 RETURNING id, created_at",
 				Args: []any{},
 			},
@@ -53,9 +53,9 @@ func TestBuild(t *testing.T) {
 		{
 			name: "update with default from option",
 			args: args{
-				query: NewUpdate("users", []string{"id", "name", "email", "password"}, WithFrom("roles")),
+				query: Update("users", []string{"id", "name", "email", "password"}, WithFrom("roles")),
 			},
-			want: SQLCraft{
+			want: SQLQuery{
 				Sql:  "UPDATE users SET id = $1, name = $2, email = $3, password = $4 FROM roles",
 				Args: []any{},
 			},
@@ -64,9 +64,9 @@ func TestBuild(t *testing.T) {
 		{
 			name: "update with default from option with table alias",
 			args: args{
-				query: NewUpdate("users", []string{"id", "name", "email", "password"}, WithFrom("roles r")),
+				query: Update("users", []string{"id", "name", "email", "password"}, WithFrom("roles r")),
 			},
-			want: SQLCraft{
+			want: SQLQuery{
 				Sql:  "UPDATE users SET id = $1, name = $2, email = $3, password = $4 FROM roles r",
 				Args: []any{},
 			},
@@ -75,9 +75,9 @@ func TestBuild(t *testing.T) {
 		{
 			name: "delete with RETURNING",
 			args: args{
-				query: NewDelete("users", WithReturning("id", "created_at")),
+				query: Delete("users", WithReturning("id", "created_at")),
 			},
-			want: SQLCraft{
+			want: SQLQuery{
 				Sql:  "DELETE FROM users RETURNING id, created_at",
 				Args: []any{},
 			},

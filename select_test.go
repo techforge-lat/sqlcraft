@@ -9,12 +9,12 @@ func TestNewSelect(t *testing.T) {
 	type args struct {
 		tableName   string
 		columns     []string
-		defualtOpts []Option
+		defualtOpts []SQLClause
 	}
 	tests := []struct {
 		name string
 		args args
-		want Select
+		want SelectQuery
 	}{
 		{
 			name: "select without where",
@@ -22,7 +22,7 @@ func TestNewSelect(t *testing.T) {
 				tableName: "users",
 				columns:   []string{"id", "name", "email", "password"},
 			},
-			want: Select{
+			want: SelectQuery{
 				query: "SELECT id, name, email, password FROM users",
 			},
 		},
@@ -32,7 +32,7 @@ func TestNewSelect(t *testing.T) {
 				tableName: "users",
 				columns:   []string{"id"},
 			},
-			want: Select{
+			want: SelectQuery{
 				query: "SELECT id FROM users",
 			},
 		},
@@ -42,7 +42,7 @@ func TestNewSelect(t *testing.T) {
 				tableName: "",
 				columns:   []string{"id"},
 			},
-			want: Select{
+			want: SelectQuery{
 				query: "",
 				err:   ErrMissingTableName,
 			},
@@ -53,7 +53,7 @@ func TestNewSelect(t *testing.T) {
 				tableName: "users",
 				columns:   []string{},
 			},
-			want: Select{
+			want: SelectQuery{
 				query: "",
 				err:   ErrMissingColumns,
 			},
@@ -61,7 +61,7 @@ func TestNewSelect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewSelect(tt.args.tableName, tt.args.columns, tt.args.defualtOpts...); !reflect.DeepEqual(got, tt.want) {
+			if got := Select(tt.args.tableName, tt.args.columns, tt.args.defualtOpts...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewSelect() = %v, want %v", got, tt.want)
 			}
 		})

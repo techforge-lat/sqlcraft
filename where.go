@@ -47,14 +47,14 @@ type FilterItem interface {
 
 type FilterItems []FilterItem
 
-func WithWhere[T FilterItem](items ...T) Option {
-	return WithSafeWhere(nil, items...)
+func WithWhere(collection ...FilterItem) SQLClause {
+	return WithSafeWhere(nil, collection...)
 }
 
-func WithSafeWhere[T FilterItem](allowedColumns AllowedColumns, items ...T) Option {
-	return func(option *options) error {
-		if len(items) == 0 {
-			return errors.New("filter items cannot be empty in WHERE option")
+func WithSafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) SQLClause {
+	return func(option *sqlClauseConfig) error {
+		if len(collection) == 0 {
+			return errors.New("filter items cannot be empty in WHERE clause")
 		}
 
 		builder := bytes.Buffer{}
@@ -63,9 +63,9 @@ func WithSafeWhere[T FilterItem](allowedColumns AllowedColumns, items ...T) Opti
 		}
 
 		args := []any{}
-
 		count := int(option.paramCountStartFrom)
-		for index, item := range items {
+
+		for index, item := range collection {
 			columnName := item.GetField()
 
 			if allowedColumns != nil {
@@ -116,7 +116,7 @@ func WithSafeWhere[T FilterItem](allowedColumns AllowedColumns, items ...T) Opti
 				count++
 			}
 
-			if item.GetChainingKey() != "" && len(items)-1 > index {
+			if item.GetChainingKey() != "" && len(collection)-1 > index {
 				builder.WriteString(" ")
 				builder.WriteString(strings.ToUpper(item.GetChainingKey()))
 				builder.WriteString(" ")
@@ -127,11 +127,12 @@ func WithSafeWhere[T FilterItem](allowedColumns AllowedColumns, items ...T) Opti
 			}
 
 			args = append(args, item.GetValue)
+			index++
 		}
 
-		option.sql = strings.TrimSpace(builder.String())
+		option.expression = strings.TrimSpace(builder.String())
 		option.args = args
-		option.key = where
+		option.sqlClause = where
 
 		return nil
 

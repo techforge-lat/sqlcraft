@@ -11,21 +11,20 @@ var (
 )
 
 type Query interface {
-	defaultOpts() Options
-	optionKeys() optionKeys
+	defaultOpts() SQLClauses
 	paramsCount() uint
 	sql() string
 	Err() error
 }
 
-type SQLCraft struct {
+type SQLQuery struct {
 	Sql  string
 	Args []any
 }
 
-func Build(query Query, opts ...Option) (SQLCraft, error) {
+func Build(query Query, opts ...SQLClause) (SQLQuery, error) {
 	if query.Err() != nil {
-		return SQLCraft{}, query.Err()
+		return SQLQuery{}, query.Err()
 	}
 
 	// TODO: validate that the option can be use for the `query`
@@ -39,35 +38,27 @@ func Build(query Query, opts ...Option) (SQLCraft, error) {
 	args := []any{}
 	excludeWhereKeyword := false
 	for _, opt := range opts {
-		var option options
+		var option sqlClauseConfig
 		option.excludeWhereKeyword = excludeWhereKeyword
 		option.paramCountStartFrom = uint(len(args)) + query.paramsCount()
 
 		if err := opt(&option); err != nil {
-			return SQLCraft{}, err
+			return SQLQuery{}, err
 		}
 
 		// in case the WHERE option was used as a default
 		// and then the client still sends extra filters
-		if option.key == where {
+		if option.sqlClause == where {
 			excludeWhereKeyword = true
 		}
 
-		if option.err != nil {
-			return SQLCraft{}, option.err
-		}
-
-		if option.key.IsInList(query.optionKeys()) {
-			return SQLCraft{}, ErrDuplicatedOption
-		}
-
 		sql.WriteString(" ")
-		sql.WriteString(option.sql)
+		sql.WriteString(option.expression)
 
 		args = append(args, option.args...)
 	}
 
-	return SQLCraft{
+	return SQLQuery{
 		Sql:  sql.String(),
 		Args: args,
 	}, nil

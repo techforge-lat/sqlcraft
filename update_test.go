@@ -9,12 +9,12 @@ func TestNewUpdate(t *testing.T) {
 	type args struct {
 		tableName   string
 		columns     []string
-		defualtOpts []Option
+		defualtOpts []SQLClause
 	}
 	tests := []struct {
 		name    string
 		args    args
-		want    Update
+		want    UpdateQuery
 		wantErr bool
 	}{
 		{
@@ -23,7 +23,7 @@ func TestNewUpdate(t *testing.T) {
 				tableName: "users",
 				columns:   []string{"id", "name", "email", "password"},
 			},
-			want: Update{
+			want: UpdateQuery{
 				query: "UPDATE users SET id = $1, name = $2, email = $3, password = $4",
 			},
 			wantErr: false,
@@ -34,7 +34,7 @@ func TestNewUpdate(t *testing.T) {
 				tableName: "users",
 				columns:   []string{"id"},
 			},
-			want: Update{
+			want: UpdateQuery{
 				query: "UPDATE users SET id = $1",
 			},
 			wantErr: false,
@@ -45,7 +45,7 @@ func TestNewUpdate(t *testing.T) {
 				tableName: "users",
 				columns:   nil,
 			},
-			want: Update{
+			want: UpdateQuery{
 				err: ErrMissingColumns,
 			},
 			wantErr: true,
@@ -56,7 +56,7 @@ func TestNewUpdate(t *testing.T) {
 				tableName: "",
 				columns:   nil,
 			},
-			want: Update{
+			want: UpdateQuery{
 				err: ErrMissingTableName,
 			},
 			wantErr: true,
@@ -65,7 +65,7 @@ func TestNewUpdate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewUpdate(tt.args.tableName, tt.args.columns, tt.args.defualtOpts...)
+			got := Update(tt.args.tableName, tt.args.columns, tt.args.defualtOpts...)
 			if got.query != tt.want.query {
 				t.Errorf("NewInsert() = %v, want %v", got.query, tt.want.query)
 			}

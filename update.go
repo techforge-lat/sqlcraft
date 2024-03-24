@@ -3,28 +3,38 @@ package sqlcraft
 import (
 	"bytes"
 	"fmt"
+	"strings"
 )
 
-type Update struct {
+type UpdateQuery struct {
 	query          string
-	defaultOptions Options
-	optionKeyList  optionKeys
+	defaultOptions SQLClauses
 	argsCount      uint
 	err            error
 }
 
-// NewUpdate creates a base UPDATE sql expression with optional default expressions
+func RawUpdate(sql string, defualtOpts ...SQLClause) UpdateQuery {
+	hasWhere := strings.Contains(strings.ToUpper(sql), strings.ToUpper(string(where)))
+	defualtOpts = append(defualtOpts, withExcludeWhereKeyword(hasWhere))
+
+	return UpdateQuery{
+		query:          sql,
+		defaultOptions: defualtOpts,
+	}
+}
+
+// Update creates a base UPDATE sql expression with optional default expressions
 // When executing the sql, you must first pass the args for the SET expression
 // and then pass the args for the used option expresion in the corresponding order
-func NewUpdate(tableName string, columns []string, defualtOpts ...Option) Update {
+func Update(tableName string, columns []string, defualtOpts ...SQLClause) UpdateQuery {
 	if tableName == "" {
-		return Update{
+		return UpdateQuery{
 			err: ErrMissingTableName,
 		}
 	}
 
 	if len(columns) == 0 {
-		return Update{
+		return UpdateQuery{
 			err: ErrMissingColumns,
 		}
 	}
@@ -45,29 +55,40 @@ func NewUpdate(tableName string, columns []string, defualtOpts ...Option) Update
 		}
 	}
 
-	return Update{
+	return UpdateQuery{
 		query:          query.String(),
 		defaultOptions: defualtOpts,
 		argsCount:      uint(columnsLength),
 	}
 }
 
-func (u Update) sql() string {
+func (u *UpdateQuery) Returning(columns ...string) UpdateQuery {
+	u.defaultOptions = append(u.defaultOptions, WithReturning(columns...))
+	return *u
+}
+
+func (u *UpdateQuery) Where(items ...FilterItem) UpdateQuery {
+	u.defaultOptions = append(u.defaultOptions, WithWhere(items...))
+	return *u
+}
+
+func (u *UpdateQuery) SafeWhere(allowedColumns AllowedColumns, items ...FilterItem) UpdateQuery {
+	u.defaultOptions = append(u.defaultOptions, WithSafeWhere(allowedColumns, items...))
+	return *u
+}
+
+func (u UpdateQuery) sql() string {
 	return u.query
 }
 
-func (u Update) defaultOpts() Options {
+func (u UpdateQuery) defaultOpts() SQLClauses {
 	return u.defaultOptions
 }
 
-func (u Update) optionKeys() optionKeys {
-	return u.optionKeyList
-}
-
-func (u Update) paramsCount() uint {
+func (u UpdateQuery) paramsCount() uint {
 	return u.argsCount
 }
 
-func (u Update) Err() error {
+func (u UpdateQuery) Err() error {
 	return u.err
 }

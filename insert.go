@@ -6,23 +6,22 @@ import (
 	"strings"
 )
 
-type Insert struct {
-	query          string
-	defaultOptions Options
-	optionKeyList  optionKeys
-	argsCount      uint
-	err            error
+type InsertQuery struct {
+	query             string
+	defaultSQLClauses SQLClauses
+	argsCount         uint
+	err               error
 }
 
-func NewInsert(tableName string, columns []string, defualtOpts ...Option) Insert {
+func Insert(tableName string, columns []string, defualtOpts ...SQLClause) InsertQuery {
 	if tableName == "" {
-		return Insert{
+		return InsertQuery{
 			err: ErrMissingTableName,
 		}
 	}
 
 	if len(columns) == 0 {
-		return Insert{
+		return InsertQuery{
 			err: ErrMissingColumns,
 		}
 	}
@@ -48,29 +47,30 @@ func NewInsert(tableName string, columns []string, defualtOpts ...Option) Insert
 	query.WriteString(args.String())
 	query.WriteString(")")
 
-	return Insert{
-		query:          query.String(),
-		defaultOptions: defualtOpts,
-		argsCount:      uint(columnsLength),
+	return InsertQuery{
+		query:             query.String(),
+		defaultSQLClauses: defualtOpts,
+		argsCount:         uint(columnsLength),
 	}
 }
 
-func (i Insert) sql() string {
+func (i *InsertQuery) Returning(columns ...string) InsertQuery {
+	i.defaultSQLClauses = append(i.defaultSQLClauses, WithReturning(columns...))
+	return *i
+}
+
+func (i InsertQuery) sql() string {
 	return i.query
 }
 
-func (i Insert) defaultOpts() Options {
-	return i.defaultOptions
+func (i InsertQuery) defaultOpts() SQLClauses {
+	return i.defaultSQLClauses
 }
 
-func (i Insert) optionKeys() optionKeys {
-	return i.optionKeyList
-}
-
-func (i Insert) paramsCount() uint {
+func (i InsertQuery) paramsCount() uint {
 	return i.argsCount
 }
 
-func (i Insert) Err() error {
+func (i InsertQuery) Err() error {
 	return i.err
 }

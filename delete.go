@@ -2,18 +2,18 @@ package sqlcraft
 
 import (
 	"bytes"
+	"strings"
 )
 
-type Delete struct {
+type DeleteQuery struct {
 	query          string
-	defaultOptions Options
-	optionKeyList  optionKeys
+	defaultOptions SQLClauses
 	err            error
 }
 
-func NewDelete(tableName string, defualtOpts ...Option) Delete {
+func Delete(tableName string, defualtOpts ...SQLClause) DeleteQuery {
 	if tableName == "" {
-		return Delete{
+		return DeleteQuery{
 			err: ErrMissingTableName,
 		}
 	}
@@ -23,28 +23,49 @@ func NewDelete(tableName string, defualtOpts ...Option) Delete {
 	query.WriteString("DELETE FROM ")
 	query.WriteString(tableName)
 
-	return Delete{
+	return DeleteQuery{
 		query:          query.String(),
 		defaultOptions: defualtOpts,
 	}
 }
 
-func (d Delete) sql() string {
+func RawDelete(sql string, defualtOpts ...SQLClause) DeleteQuery {
+	hasWhere := strings.Contains(strings.ToUpper(sql), strings.ToUpper(string(where)))
+	defualtOpts = append(defualtOpts, withExcludeWhereKeyword(hasWhere))
+
+	return DeleteQuery{
+		query:          sql,
+		defaultOptions: defualtOpts,
+	}
+}
+
+func (d *DeleteQuery) Returning(columns ...string) DeleteQuery {
+	d.defaultOptions = append(d.defaultOptions, WithReturning(columns...))
+	return *d
+}
+
+func (d *DeleteQuery) Where(collection ...FilterItem) DeleteQuery {
+	d.defaultOptions = append(d.defaultOptions, WithWhere(collection...))
+	return *d
+}
+
+func (d *DeleteQuery) SafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) DeleteQuery {
+	d.defaultOptions = append(d.defaultOptions, WithSafeWhere(allowedColumns, collection...))
+	return *d
+}
+
+func (d DeleteQuery) sql() string {
 	return d.query
 }
 
-func (d Delete) defaultOpts() Options {
+func (d DeleteQuery) defaultOpts() SQLClauses {
 	return d.defaultOptions
 }
 
-func (d Delete) optionKeys() optionKeys {
-	return d.optionKeyList
-}
-
-func (d Delete) paramsCount() uint {
+func (d DeleteQuery) paramsCount() uint {
 	return 0
 }
 
-func (d Delete) Err() error {
+func (d DeleteQuery) Err() error {
 	return d.err
 }

@@ -52,18 +52,17 @@ func WithWhere(collection ...FilterItem) SQLClause {
 }
 
 func WithSafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) SQLClause {
-	return func(option *sqlClauseConfig) error {
+	return func(config *sqlClauseConfig) error {
 		if len(collection) == 0 {
 			return errors.New("filter items cannot be empty in WHERE clause")
 		}
 
 		builder := bytes.Buffer{}
-		if !option.excludeWhereKeyword {
+		if !config.excludeWhereKeyword {
 			builder.WriteString(" WHERE ")
 		}
 
-		args := []any{}
-		count := int(option.paramCountStartFrom)
+		count := int(config.paramCountStartFrom)
 
 		for index, item := range collection {
 			columnName := item.GetField()
@@ -93,22 +92,22 @@ func WithSafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) SQLC
 				continue
 			}
 
-			op, err := item.GetParsedOperator()
+			operator, err := item.GetParsedOperator()
 			if err != nil {
 				return fmt.Errorf("error parsing operator %s, %w", item.GetOperator(), err)
 			}
 
 			builder.WriteString(columnName)
 			builder.WriteString(" ")
-			builder.WriteString(op)
+			builder.WriteString(operator)
 
-			if op == In {
+			if operator == In {
 				in, inArgs := buildIn(item.GetValue, count)
 				builder.WriteString(" ")
 				builder.WriteString(in)
 
 				count += len(inArgs)
-				args = append(args, inArgs...)
+				config.args = append(config.args, inArgs...)
 			} else {
 				builder.WriteString(" ")
 				builder.WriteString("$")
@@ -122,17 +121,16 @@ func WithSafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) SQLC
 				builder.WriteString(" ")
 			}
 
-			if op == In {
+			if operator == In {
 				continue
 			}
 
-			args = append(args, item.GetValue)
+			config.args = append(config.args, item.GetValue)
 			index++
 		}
 
-		option.expression = strings.TrimSpace(builder.String())
-		option.args = args
-		option.sqlClause = where
+		config.expression = strings.TrimSpace(builder.String())
+		config.sqlClause = where
 
 		return nil
 

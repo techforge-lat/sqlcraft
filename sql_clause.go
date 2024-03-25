@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var ErrDuplicatedOption = errors.New("cannot have duplicated sql clauses")
+var ErrDuplicatedOption = errors.New("cannot have duplicated SQL clauses")
 
 type sqlClause string
 
@@ -18,6 +18,7 @@ const (
 	limit     sqlClause = "LIMIT"
 	offset    sqlClause = "OFFSET"
 	from      sqlClause = "FROM"
+	groupBy   sqlClause = "GROUP BY"
 )
 
 type sqlClauses []sqlClause
@@ -71,7 +72,7 @@ func WithReturning(columns ...string) SQLClause {
 func WithFrom(expression string) SQLClause {
 	return func(option *sqlClauseConfig) error {
 		if expression == "" {
-			return errors.New("expression in FROM option cannot be empty")
+			return errors.New("expression in FROM clause cannot be empty")
 		}
 
 		option.expression = fmt.Sprintf("FROM %s", expression)
@@ -89,7 +90,7 @@ type SortItem interface {
 func WithSort(allowedColumns AllowedColumns, items ...SortItem) SQLClause {
 	return func(option *sqlClauseConfig) error {
 		if len(items) == 0 {
-			return errors.New("sort items cannot be empty in ORDER BY option")
+			return errors.New("sort items cannot be empty in ORDER BY clause")
 		}
 
 		builder := bytes.Buffer{}
@@ -113,13 +114,26 @@ func WithSort(allowedColumns AllowedColumns, items ...SortItem) SQLClause {
 func WithLimit(value uint) SQLClause {
 	return func(config *sqlClauseConfig) error {
 		if value == 0 {
-			return nil
+			return errors.New("`columns` cannot be empty in GROUP BY clause")
 		}
 
 		limitParamNumber := config.paramCountStartFrom + 1
 
 		config.expression = fmt.Sprintf("LIMIT $%d", limitParamNumber)
 		config.args = append(config.args, value)
+		config.sqlClause = limit
+
+		return nil
+	}
+}
+
+func WithGroupBy(columns ...string) SQLClause {
+	return func(config *sqlClauseConfig) error {
+		if len(columns) == 0 {
+			return nil
+		}
+
+		config.expression = fmt.Sprintf("GROUP BY %s", strings.Join(columns, ", "))
 		config.sqlClause = limit
 
 		return nil

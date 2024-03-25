@@ -11,10 +11,10 @@ var (
 )
 
 type Query interface {
-	defaultOpts() SQLClauses
+	Err() error
+	defaultSQLClouseConfigs() SQLClauses
 	paramsCount() uint
 	sql() string
-	Err() error
 }
 
 type SQLQuery struct {
@@ -33,7 +33,7 @@ func Build(query Query, opts ...SQLClause) (SQLQuery, error) {
 	sql := strings.Builder{}
 	sql.WriteString(query.sql())
 
-	opts = append(query.defaultOpts(), opts...)
+	opts = append(query.defaultSQLClouseConfigs(), opts...)
 
 	args := []any{}
 	excludeWhereKeyword := false

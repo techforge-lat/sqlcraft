@@ -1,14 +1,13 @@
 package sqlcraft
 
 import (
-	"bytes"
 	"strings"
 )
 
 type DeleteQuery struct {
-	query          string
-	defaultOptions SQLClauses
-	err            error
+	query             string
+	defaultSQLClauses SQLClauses
+	err               error
 }
 
 func Delete(tableName string, defualtOpts ...SQLClause) DeleteQuery {
@@ -18,14 +17,14 @@ func Delete(tableName string, defualtOpts ...SQLClause) DeleteQuery {
 		}
 	}
 
-	query := bytes.Buffer{}
+	query := strings.Builder{}
 
 	query.WriteString("DELETE FROM ")
 	query.WriteString(tableName)
 
 	return DeleteQuery{
-		query:          query.String(),
-		defaultOptions: defualtOpts,
+		query:             query.String(),
+		defaultSQLClauses: defualtOpts,
 	}
 }
 
@@ -34,23 +33,23 @@ func RawDelete(sql string, defualtOpts ...SQLClause) DeleteQuery {
 	defualtOpts = append(defualtOpts, withExcludeWhereKeyword(hasWhere))
 
 	return DeleteQuery{
-		query:          sql,
-		defaultOptions: defualtOpts,
+		query:             sql,
+		defaultSQLClauses: defualtOpts,
 	}
 }
 
 func (d *DeleteQuery) Returning(columns ...string) DeleteQuery {
-	d.defaultOptions = append(d.defaultOptions, WithReturning(columns...))
+	d.defaultSQLClauses = append(d.defaultSQLClauses, WithReturning(columns...))
 	return *d
 }
 
 func (d *DeleteQuery) Where(collection ...FilterItem) DeleteQuery {
-	d.defaultOptions = append(d.defaultOptions, WithWhere(collection...))
+	d.defaultSQLClauses = append(d.defaultSQLClauses, WithWhere(collection...))
 	return *d
 }
 
 func (d *DeleteQuery) SafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) DeleteQuery {
-	d.defaultOptions = append(d.defaultOptions, WithSafeWhere(allowedColumns, collection...))
+	d.defaultSQLClauses = append(d.defaultSQLClauses, WithSafeWhere(allowedColumns, collection...))
 	return *d
 }
 
@@ -58,8 +57,8 @@ func (d DeleteQuery) sql() string {
 	return d.query
 }
 
-func (d DeleteQuery) defaultOpts() SQLClauses {
-	return d.defaultOptions
+func (d DeleteQuery) defaultSQLClouseConfigs() SQLClauses {
+	return d.defaultSQLClauses
 }
 
 func (d DeleteQuery) paramsCount() uint {

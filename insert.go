@@ -63,7 +63,7 @@ func (i InsertQuery) sql() string {
 	return i.query
 }
 
-func (i InsertQuery) defaultOpts() SQLClauses {
+func (i InsertQuery) defaultSQLClouseConfigs() SQLClauses {
 	return i.defaultSQLClauses
 }
 

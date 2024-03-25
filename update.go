@@ -7,26 +7,26 @@ import (
 )
 
 type UpdateQuery struct {
-	query          string
-	defaultOptions SQLClauses
-	argsCount      uint
-	err            error
+	query             string
+	defaultSQLClauses SQLClauses
+	argsCount         uint
+	err               error
 }
 
-func RawUpdate(sql string, defualtOpts ...SQLClause) UpdateQuery {
+func RawUpdate(sql string, sqlClouseConfigs ...SQLClause) UpdateQuery {
 	hasWhere := strings.Contains(strings.ToUpper(sql), strings.ToUpper(string(where)))
-	defualtOpts = append(defualtOpts, withExcludeWhereKeyword(hasWhere))
+	sqlClouseConfigs = append(sqlClouseConfigs, withExcludeWhereKeyword(hasWhere))
 
 	return UpdateQuery{
-		query:          sql,
-		defaultOptions: defualtOpts,
+		query:             sql,
+		defaultSQLClauses: sqlClouseConfigs,
 	}
 }
 
 // Update creates a base UPDATE sql expression with optional default expressions
 // When executing the sql, you must first pass the args for the SET expression
 // and then pass the args for the used option expresion in the corresponding order
-func Update(tableName string, columns []string, defualtOpts ...SQLClause) UpdateQuery {
+func Update(tableName string, columns []string, sqlClouseConfigs ...SQLClause) UpdateQuery {
 	if tableName == "" {
 		return UpdateQuery{
 			err: ErrMissingTableName,
@@ -56,24 +56,24 @@ func Update(tableName string, columns []string, defualtOpts ...SQLClause) Update
 	}
 
 	return UpdateQuery{
-		query:          query.String(),
-		defaultOptions: defualtOpts,
-		argsCount:      uint(columnsLength),
+		query:             query.String(),
+		defaultSQLClauses: sqlClouseConfigs,
+		argsCount:         uint(columnsLength),
 	}
 }
 
 func (u *UpdateQuery) Returning(columns ...string) UpdateQuery {
-	u.defaultOptions = append(u.defaultOptions, WithReturning(columns...))
+	u.defaultSQLClauses = append(u.defaultSQLClauses, WithReturning(columns...))
 	return *u
 }
 
 func (u *UpdateQuery) Where(items ...FilterItem) UpdateQuery {
-	u.defaultOptions = append(u.defaultOptions, WithWhere(items...))
+	u.defaultSQLClauses = append(u.defaultSQLClauses, WithWhere(items...))
 	return *u
 }
 
 func (u *UpdateQuery) SafeWhere(allowedColumns AllowedColumns, items ...FilterItem) UpdateQuery {
-	u.defaultOptions = append(u.defaultOptions, WithSafeWhere(allowedColumns, items...))
+	u.defaultSQLClauses = append(u.defaultSQLClauses, WithSafeWhere(allowedColumns, items...))
 	return *u
 }
 
@@ -81,8 +81,8 @@ func (u UpdateQuery) sql() string {
 	return u.query
 }
 
-func (u UpdateQuery) defaultOpts() SQLClauses {
-	return u.defaultOptions
+func (u UpdateQuery) defaultSQLClouseConfigs() SQLClauses {
+	return u.defaultSQLClauses
 }
 
 func (u UpdateQuery) paramsCount() uint {

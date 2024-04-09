@@ -54,7 +54,7 @@ func WithWhere(collection ...FilterItem) SQLClause {
 func WithSafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) SQLClause {
 	return func(config *sqlClauseConfig) error {
 		if len(collection) == 0 {
-			return errors.New("filter items cannot be empty in WHERE clause")
+			return nil
 		}
 
 		builder := bytes.Buffer{}
@@ -125,8 +125,7 @@ func WithSafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) SQLC
 				continue
 			}
 
-			config.args = append(config.args, item.GetValue)
-			index++
+			config.args = append(config.args, item.GetValue())
 		}
 
 		config.expression = strings.TrimSpace(builder.String())

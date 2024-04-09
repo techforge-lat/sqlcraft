@@ -23,8 +23,7 @@ func TestBuild(t *testing.T) {
 				opts:  []SQLClause{WithReturning("id", "created_at")},
 			},
 			want: SQLQuery{
-				Sql:  "INSERT INTO users (id, name, email, password) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
-				Args: []any{},
+				Sql: "INSERT INTO users (id, name, email, password) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
 			},
 			wantErr: false,
 		},
@@ -34,8 +33,7 @@ func TestBuild(t *testing.T) {
 				query: Insert("users", []string{"id", "name", "email", "password"}, WithReturning("id", "created_at")),
 			},
 			want: SQLQuery{
-				Sql:  "INSERT INTO users (id, name, email, password) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
-				Args: []any{},
+				Sql: "INSERT INTO users (id, name, email, password) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
 			},
 			wantErr: false,
 		},
@@ -45,8 +43,7 @@ func TestBuild(t *testing.T) {
 				query: Update("users", []string{"id", "name", "email", "password"}, WithReturning("id", "created_at")),
 			},
 			want: SQLQuery{
-				Sql:  "UPDATE users SET id = $1, name = $2, email = $3, password = $4 RETURNING id, created_at",
-				Args: []any{},
+				Sql: "UPDATE users SET id = $1, name = $2, email = $3, password = $4 RETURNING id, created_at",
 			},
 			wantErr: false,
 		},
@@ -56,8 +53,7 @@ func TestBuild(t *testing.T) {
 				query: Update("users", []string{"id", "name", "email", "password"}, WithFrom("roles")),
 			},
 			want: SQLQuery{
-				Sql:  "UPDATE users SET id = $1, name = $2, email = $3, password = $4 FROM roles",
-				Args: []any{},
+				Sql: "UPDATE users SET id = $1, name = $2, email = $3, password = $4 FROM roles",
 			},
 			wantErr: false,
 		},
@@ -67,8 +63,7 @@ func TestBuild(t *testing.T) {
 				query: Update("users", []string{"id", "name", "email", "password"}, WithFrom("roles r")),
 			},
 			want: SQLQuery{
-				Sql:  "UPDATE users SET id = $1, name = $2, email = $3, password = $4 FROM roles r",
-				Args: []any{},
+				Sql: "UPDATE users SET id = $1, name = $2, email = $3, password = $4 FROM roles r",
 			},
 			wantErr: false,
 		},
@@ -78,8 +73,7 @@ func TestBuild(t *testing.T) {
 				query: Delete("users", WithReturning("id", "created_at")),
 			},
 			want: SQLQuery{
-				Sql:  "DELETE FROM users RETURNING id, created_at",
-				Args: []any{},
+				Sql: "DELETE FROM users RETURNING id, created_at",
 			},
 			wantErr: false,
 		},

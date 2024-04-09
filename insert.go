@@ -13,7 +13,7 @@ type InsertQuery struct {
 	err               error
 }
 
-func Insert(tableName string, columns []string, defualtOpts ...SQLClause) InsertQuery {
+func Insert(tableName string, columns []string, defaultOpts ...SQLClause) InsertQuery {
 	if tableName == "" {
 		return InsertQuery{
 			err: ErrMissingTableName,
@@ -49,21 +49,21 @@ func Insert(tableName string, columns []string, defualtOpts ...SQLClause) Insert
 
 	return InsertQuery{
 		query:             query.String(),
-		defaultSQLClauses: defualtOpts,
+		defaultSQLClauses: defaultOpts,
 		argsCount:         uint(columnsLength),
 	}
 }
 
-func (i *InsertQuery) Returning(columns ...string) InsertQuery {
+func (i InsertQuery) Returning(columns ...string) InsertQuery {
 	i.defaultSQLClauses = append(i.defaultSQLClauses, WithReturning(columns...))
-	return *i
+	return i
 }
 
 func (i InsertQuery) sql() string {
 	return i.query
 }
 
-func (i InsertQuery) defaultSQLClouseConfigs() SQLClauses {
+func (i InsertQuery) defaultSQLClauseConfigs() SQLClauses {
 	return i.defaultSQLClauses
 }
 

@@ -7,22 +7,22 @@ import (
 
 type SelectQuery struct {
 	query             string
-	defaultSQLClouses SQLClauses
+	defaultSQLClauses SQLClauses
 	argsCount         uint
 	err               error
 }
 
-func RawSelect(sql string, sqlClouseConfigs ...SQLClause) SelectQuery {
+func RawSelect(sql string, sqlClauseConfigs ...SQLClause) SelectQuery {
 	hasWhere := strings.Contains(strings.ToUpper(sql), strings.ToUpper(string(where)))
-	sqlClouseConfigs = append(sqlClouseConfigs, withExcludeWhereKeyword(hasWhere))
+	sqlClauseConfigs = append(sqlClauseConfigs, withExcludeWhereKeyword(hasWhere))
 
 	return SelectQuery{
 		query:             sql,
-		defaultSQLClouses: sqlClouseConfigs,
+		defaultSQLClauses: sqlClauseConfigs,
 	}
 }
 
-func Select(tableName string, columns []string, sqlClouseConfigs ...SQLClause) SelectQuery {
+func Select(tableName string, columns []string, sqlClauseConfigs ...SQLClause) SelectQuery {
 	if tableName == "" {
 		return SelectQuery{
 			err: ErrMissingTableName,
@@ -43,37 +43,57 @@ func Select(tableName string, columns []string, sqlClouseConfigs ...SQLClause) S
 
 	return SelectQuery{
 		query:             query.String(),
-		defaultSQLClouses: sqlClouseConfigs,
+		defaultSQLClauses: sqlClauseConfigs,
 	}
 }
 
-func (d SelectQuery) Where(collection ...FilterItem) SelectQuery {
-	d.defaultSQLClouses = append(d.defaultSQLClouses, WithWhere(collection...))
-	return d
+func (s SelectQuery) Where(collection ...FilterItem) SelectQuery {
+	s.defaultSQLClauses = append(s.defaultSQLClauses, WithWhere(collection...))
+	return s
 }
 
-func (d SelectQuery) SafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) SelectQuery {
-	d.defaultSQLClouses = append(d.defaultSQLClouses, WithSafeWhere(allowedColumns, collection...))
-	return d
+func (s SelectQuery) SafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) SelectQuery {
+	s.defaultSQLClauses = append(s.defaultSQLClauses, WithSafeWhere(allowedColumns, collection...))
+	return s
 }
 
-func (d SelectQuery) GroupBy(columns ...string) SelectQuery {
-	d.defaultSQLClouses = append(d.defaultSQLClouses, WithGroupBy(columns...))
-	return d
+func (s SelectQuery) GroupBy(columns ...string) SelectQuery {
+	s.defaultSQLClauses = append(s.defaultSQLClauses, WithGroupBy(columns...))
+	return s
 }
 
-func (i SelectQuery) sql() string {
-	return i.query
+func (s SelectQuery) OrderBy(collection ...SortItem) SelectQuery {
+	s.defaultSQLClauses = append(s.defaultSQLClauses, WithOrderBy(collection...))
+	return s
 }
 
-func (i SelectQuery) defaultSQLClouseConfigs() SQLClauses {
-	return i.defaultSQLClouses
+func (s SelectQuery) SafeOrderBy(allowedColumns AllowedColumns, collection ...SortItem) SelectQuery {
+	s.defaultSQLClauses = append(s.defaultSQLClauses, WithSafeOrderBy(allowedColumns, collection...))
+	return s
 }
 
-func (i SelectQuery) paramsCount() uint {
-	return i.argsCount
+func (s SelectQuery) Limit(limit uint) SelectQuery {
+	s.defaultSQLClauses = append(s.defaultSQLClauses, WithLimit(limit))
+	return s
 }
 
-func (i SelectQuery) Err() error {
-	return i.err
+func (s SelectQuery) Offset(offset uint) SelectQuery {
+	s.defaultSQLClauses = append(s.defaultSQLClauses, WithOffset(offset))
+	return s
+}
+
+func (s SelectQuery) sql() string {
+	return s.query
+}
+
+func (s SelectQuery) defaultSQLClauseConfigs() SQLClauses {
+	return s.defaultSQLClauses
+}
+
+func (s SelectQuery) paramsCount() uint {
+	return s.argsCount
+}
+
+func (s SelectQuery) Err() error {
+	return s.err
 }

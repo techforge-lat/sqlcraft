@@ -21,8 +21,6 @@ const (
 	groupBy   sqlClause = "GROUP BY"
 )
 
-type sqlClauses []sqlClause
-
 type sqlClauseConfig struct {
 	// expression the final sql expression that will be joined with the main SQL query.
 	expression string
@@ -52,7 +50,7 @@ type SQLClause func(config *sqlClauseConfig) error
 type SQLClauses []SQLClause
 
 // WithReturning creates a RETURNING SQL clause.
-// If `columns` param is empty, the `*` will be used insetead.
+// If `columns` param is empty, the `*` will be used instead.
 func WithReturning(columns ...string) SQLClause {
 	return func(option *sqlClauseConfig) error {
 		if len(columns) == 0 {
@@ -87,16 +85,32 @@ type SortItem interface {
 	GetOrder() string
 }
 
-func WithSort(allowedColumns AllowedColumns, items ...SortItem) SQLClause {
+type SortItems []SortItem
+
+func WithOrderBy(items ...SortItem) SQLClause {
+	return WithSafeOrderBy(nil, items...)
+}
+
+func WithSafeOrderBy(allowedColumns AllowedColumns, items ...SortItem) SQLClause {
 	return func(option *sqlClauseConfig) error {
 		if len(items) == 0 {
-			return errors.New("sort items cannot be empty in ORDER BY clause")
+			return nil
 		}
 
 		builder := bytes.Buffer{}
 		builder.WriteString(" ORDER BY ")
 		for _, item := range items {
-			builder.WriteString(item.GetField())
+			columnName := item.GetField()
+			if allowedColumns != nil {
+				column, ok := allowedColumns[item.GetField()]
+				if !ok {
+					return fmt.Errorf("field %s not found, %w", item.GetField(), ErrInvalidFieldName)
+				}
+
+				columnName = column
+			}
+
+			builder.WriteString(columnName)
 			builder.WriteString(" ")
 			builder.WriteString(item.GetOrder())
 			builder.WriteString(", ")

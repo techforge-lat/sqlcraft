@@ -7,10 +7,10 @@ import (
 )
 
 type UpdateQuery struct {
-	query             string
-	defaultSQLClauses SQLClauses
-	argsCount         uint
-	err               error
+	query      string
+	sqlClauses SQLClauses
+	argsCount  uint
+	err        error
 }
 
 func RawUpdate(sql string, sqlClauseConfigs ...SQLClause) UpdateQuery {
@@ -18,8 +18,8 @@ func RawUpdate(sql string, sqlClauseConfigs ...SQLClause) UpdateQuery {
 	sqlClauseConfigs = append(sqlClauseConfigs, withExcludeWhereKeyword(hasWhere))
 
 	return UpdateQuery{
-		query:             sql,
-		defaultSQLClauses: sqlClauseConfigs,
+		query:      sql,
+		sqlClauses: sqlClauseConfigs,
 	}
 }
 
@@ -56,24 +56,24 @@ func Update(tableName string, columns []string, sqlClauseConfigs ...SQLClause) U
 	}
 
 	return UpdateQuery{
-		query:             query.String(),
-		defaultSQLClauses: sqlClauseConfigs,
-		argsCount:         uint(columnsLength),
+		query:      query.String(),
+		sqlClauses: sqlClauseConfigs,
+		argsCount:  uint(columnsLength) + 1,
 	}
 }
 
 func (u UpdateQuery) Returning(columns ...string) UpdateQuery {
-	u.defaultSQLClauses = append(u.defaultSQLClauses, WithReturning(columns...))
+	u.sqlClauses = append(u.sqlClauses, WithReturning(columns...))
 	return u
 }
 
 func (u UpdateQuery) Where(items ...FilterItem) UpdateQuery {
-	u.defaultSQLClauses = append(u.defaultSQLClauses, WithWhere(items...))
+	u.sqlClauses = append(u.sqlClauses, WithWhere(items...))
 	return u
 }
 
 func (u UpdateQuery) SafeWhere(allowedColumns AllowedColumns, items ...FilterItem) UpdateQuery {
-	u.defaultSQLClauses = append(u.defaultSQLClauses, WithSafeWhere(allowedColumns, items...))
+	u.sqlClauses = append(u.sqlClauses, WithSafeWhere(allowedColumns, items...))
 	return u
 }
 
@@ -82,7 +82,7 @@ func (u UpdateQuery) sql() string {
 }
 
 func (u UpdateQuery) defaultSQLClauseConfigs() SQLClauses {
-	return u.defaultSQLClauses
+	return u.sqlClauses
 }
 
 func (u UpdateQuery) paramsCount() uint {

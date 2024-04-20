@@ -62,14 +62,14 @@ func WithSafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) SQLC
 			builder.WriteString(" WHERE ")
 		}
 
-		count := int(config.paramCountStartFrom)
+		count := int(config.paramCountStartFrom) + 1
 
 		for index, item := range collection {
 			columnName := item.GetField()
 
 			if allowedColumns != nil {
 				column, ok := allowedColumns[item.GetField()]
-				if !ok {
+				if !ok && !item.HasGroupOpen() && !item.HasGroupClose() {
 					return fmt.Errorf("field %s not found, %w", item.GetField(), ErrInvalidFieldName)
 				}
 
@@ -111,7 +111,7 @@ func WithSafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) SQLC
 			} else {
 				builder.WriteString(" ")
 				builder.WriteString("$")
-				builder.WriteString(strconv.Itoa(count + 1))
+				builder.WriteString(strconv.Itoa(count))
 				count++
 			}
 
@@ -132,7 +132,6 @@ func WithSafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) SQLC
 		config.sqlClause = where
 
 		return nil
-
 	}
 }
 

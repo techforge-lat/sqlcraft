@@ -125,22 +125,6 @@ func WithSafeOrderBy(allowedColumns AllowedColumns, items ...SortItem) SQLClause
 	}
 }
 
-func WithLimit(value uint) SQLClause {
-	return func(config *sqlClauseConfig) error {
-		if value == 0 {
-			return errors.New("`columns` cannot be empty in GROUP BY clause")
-		}
-
-		limitParamNumber := config.paramCountStartFrom + 1
-
-		config.expression = fmt.Sprintf("LIMIT $%d", limitParamNumber)
-		config.args = append(config.args, value)
-		config.sqlClause = limit
-
-		return nil
-	}
-}
-
 func WithGroupBy(columns ...string) SQLClause {
 	return func(config *sqlClauseConfig) error {
 		if len(columns) == 0 {
@@ -148,6 +132,22 @@ func WithGroupBy(columns ...string) SQLClause {
 		}
 
 		config.expression = fmt.Sprintf("GROUP BY %s", strings.Join(columns, ", "))
+		config.sqlClause = limit
+
+		return nil
+	}
+}
+
+func WithLimit(value uint) SQLClause {
+	return func(config *sqlClauseConfig) error {
+		if value == 0 {
+			return nil
+		}
+
+		limitParamNumber := config.paramCountStartFrom + 1
+
+		config.expression = fmt.Sprintf("LIMIT $%d", limitParamNumber)
+		config.args = append(config.args, value)
 		config.sqlClause = limit
 
 		return nil

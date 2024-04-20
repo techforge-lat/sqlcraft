@@ -6,10 +6,10 @@ import (
 )
 
 type SelectQuery struct {
-	query             string
-	defaultSQLClauses SQLClauses
-	argsCount         uint
-	err               error
+	query      string
+	sqlClauses SQLClauses
+	argsCount  uint
+	err        error
 }
 
 func RawSelect(sql string, sqlClauseConfigs ...SQLClause) SelectQuery {
@@ -17,8 +17,8 @@ func RawSelect(sql string, sqlClauseConfigs ...SQLClause) SelectQuery {
 	sqlClauseConfigs = append(sqlClauseConfigs, withExcludeWhereKeyword(hasWhere))
 
 	return SelectQuery{
-		query:             sql,
-		defaultSQLClauses: sqlClauseConfigs,
+		query:      sql,
+		sqlClauses: sqlClauseConfigs,
 	}
 }
 
@@ -42,43 +42,43 @@ func Select(tableName string, columns []string, sqlClauseConfigs ...SQLClause) S
 	query.WriteString(tableName)
 
 	return SelectQuery{
-		query:             query.String(),
-		defaultSQLClauses: sqlClauseConfigs,
+		query:      query.String(),
+		sqlClauses: sqlClauseConfigs,
 	}
 }
 
 func (s SelectQuery) Where(collection ...FilterItem) SelectQuery {
-	s.defaultSQLClauses = append(s.defaultSQLClauses, WithWhere(collection...))
+	s.sqlClauses = append(s.sqlClauses, WithWhere(collection...))
 	return s
 }
 
 func (s SelectQuery) SafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) SelectQuery {
-	s.defaultSQLClauses = append(s.defaultSQLClauses, WithSafeWhere(allowedColumns, collection...))
+	s.sqlClauses = append(s.sqlClauses, WithSafeWhere(allowedColumns, collection...))
 	return s
 }
 
 func (s SelectQuery) GroupBy(columns ...string) SelectQuery {
-	s.defaultSQLClauses = append(s.defaultSQLClauses, WithGroupBy(columns...))
+	s.sqlClauses = append(s.sqlClauses, WithGroupBy(columns...))
 	return s
 }
 
 func (s SelectQuery) OrderBy(collection ...SortItem) SelectQuery {
-	s.defaultSQLClauses = append(s.defaultSQLClauses, WithOrderBy(collection...))
+	s.sqlClauses = append(s.sqlClauses, WithOrderBy(collection...))
 	return s
 }
 
 func (s SelectQuery) SafeOrderBy(allowedColumns AllowedColumns, collection ...SortItem) SelectQuery {
-	s.defaultSQLClauses = append(s.defaultSQLClauses, WithSafeOrderBy(allowedColumns, collection...))
+	s.sqlClauses = append(s.sqlClauses, WithSafeOrderBy(allowedColumns, collection...))
 	return s
 }
 
 func (s SelectQuery) Limit(limit uint) SelectQuery {
-	s.defaultSQLClauses = append(s.defaultSQLClauses, WithLimit(limit))
+	s.sqlClauses = append(s.sqlClauses, WithLimit(limit))
 	return s
 }
 
 func (s SelectQuery) Offset(offset uint) SelectQuery {
-	s.defaultSQLClauses = append(s.defaultSQLClauses, WithOffset(offset))
+	s.sqlClauses = append(s.sqlClauses, WithOffset(offset))
 	return s
 }
 
@@ -87,7 +87,7 @@ func (s SelectQuery) sql() string {
 }
 
 func (s SelectQuery) defaultSQLClauseConfigs() SQLClauses {
-	return s.defaultSQLClauses
+	return s.sqlClauses
 }
 
 func (s SelectQuery) paramsCount() uint {

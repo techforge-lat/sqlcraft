@@ -38,24 +38,28 @@ func Build(query Query, opts ...SQLClause) (SQLQuery, error) {
 	var args []any
 	excludeWhereKeyword := false
 	for _, opt := range opts {
-		var option sqlClauseConfig
-		option.excludeWhereKeyword = excludeWhereKeyword
-		option.paramCountStartFrom = uint(len(args)) + query.paramsCount()
+		var config sqlClauseConfig
+		config.excludeWhereKeyword = excludeWhereKeyword
+		config.paramCountStartFrom = uint(len(args)) + query.paramsCount()
 
-		if err := opt(&option); err != nil {
+		if err := opt(&config); err != nil {
 			return SQLQuery{}, err
+		}
+
+		if config.expression == "" {
+			continue
 		}
 
 		// in case the WHERE option was used as a default
 		// and then the client still sends extra filters
-		if option.sqlClause == where {
+		if config.sqlClause == where {
 			excludeWhereKeyword = true
 		}
 
 		sql.WriteString(" ")
-		sql.WriteString(option.expression)
+		sql.WriteString(config.expression)
 
-		args = append(args, option.args...)
+		args = append(args, config.args...)
 	}
 
 	return SQLQuery{

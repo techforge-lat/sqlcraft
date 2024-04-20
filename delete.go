@@ -5,9 +5,9 @@ import (
 )
 
 type DeleteQuery struct {
-	query             string
-	defaultSQLClauses SQLClauses
-	err               error
+	query      string
+	sqlClauses SQLClauses
+	err        error
 }
 
 func Delete(tableName string, defaultOpts ...SQLClause) DeleteQuery {
@@ -23,8 +23,8 @@ func Delete(tableName string, defaultOpts ...SQLClause) DeleteQuery {
 	query.WriteString(tableName)
 
 	return DeleteQuery{
-		query:             query.String(),
-		defaultSQLClauses: defaultOpts,
+		query:      query.String(),
+		sqlClauses: defaultOpts,
 	}
 }
 
@@ -33,23 +33,23 @@ func RawDelete(sql string, defaultOpts ...SQLClause) DeleteQuery {
 	defaultOpts = append(defaultOpts, withExcludeWhereKeyword(hasWhere))
 
 	return DeleteQuery{
-		query:             sql,
-		defaultSQLClauses: defaultOpts,
+		query:      sql,
+		sqlClauses: defaultOpts,
 	}
 }
 
 func (d DeleteQuery) Returning(columns ...string) DeleteQuery {
-	d.defaultSQLClauses = append(d.defaultSQLClauses, WithReturning(columns...))
+	d.sqlClauses = append(d.sqlClauses, WithReturning(columns...))
 	return d
 }
 
 func (d DeleteQuery) Where(collection ...FilterItem) DeleteQuery {
-	d.defaultSQLClauses = append(d.defaultSQLClauses, WithWhere(collection...))
+	d.sqlClauses = append(d.sqlClauses, WithWhere(collection...))
 	return d
 }
 
 func (d DeleteQuery) SafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) DeleteQuery {
-	d.defaultSQLClauses = append(d.defaultSQLClauses, WithSafeWhere(allowedColumns, collection...))
+	d.sqlClauses = append(d.sqlClauses, WithSafeWhere(allowedColumns, collection...))
 	return d
 }
 
@@ -58,7 +58,7 @@ func (d DeleteQuery) sql() string {
 }
 
 func (d DeleteQuery) defaultSQLClauseConfigs() SQLClauses {
-	return d.defaultSQLClauses
+	return d.sqlClauses
 }
 
 func (d DeleteQuery) paramsCount() uint {

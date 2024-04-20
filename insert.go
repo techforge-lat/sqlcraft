@@ -7,10 +7,10 @@ import (
 )
 
 type InsertQuery struct {
-	query             string
-	defaultSQLClauses SQLClauses
-	argsCount         uint
-	err               error
+	query      string
+	sqlClauses SQLClauses
+	argsCount  uint
+	err        error
 }
 
 func Insert(tableName string, columns []string, defaultOpts ...SQLClause) InsertQuery {
@@ -48,14 +48,14 @@ func Insert(tableName string, columns []string, defaultOpts ...SQLClause) Insert
 	query.WriteString(")")
 
 	return InsertQuery{
-		query:             query.String(),
-		defaultSQLClauses: defaultOpts,
-		argsCount:         uint(columnsLength),
+		query:      query.String(),
+		sqlClauses: defaultOpts,
+		argsCount:  uint(columnsLength) + 1,
 	}
 }
 
 func (i InsertQuery) Returning(columns ...string) InsertQuery {
-	i.defaultSQLClauses = append(i.defaultSQLClauses, WithReturning(columns...))
+	i.sqlClauses = append(i.sqlClauses, WithReturning(columns...))
 	return i
 }
 
@@ -64,7 +64,7 @@ func (i InsertQuery) sql() string {
 }
 
 func (i InsertQuery) defaultSQLClauseConfigs() SQLClauses {
-	return i.defaultSQLClauses
+	return i.sqlClauses
 }
 
 func (i InsertQuery) paramsCount() uint {

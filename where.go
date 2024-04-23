@@ -97,18 +97,26 @@ func WithSafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) SQLC
 				return fmt.Errorf("error parsing operator %s, %w", item.GetOperator(), err)
 			}
 
-			builder.WriteString(columnName)
-			builder.WriteString(" ")
-			builder.WriteString(operator)
-
 			if operator == In {
-				in, inArgs := buildIn(item.GetValue, count)
+				in, inArgs := buildIn(item.GetValue(), count)
+				if in == "" {
+					continue
+				}
+
+				builder.WriteString(columnName)
+				builder.WriteString(" ")
+				builder.WriteString(operator)
+
 				builder.WriteString(" ")
 				builder.WriteString(in)
 
 				count += len(inArgs)
 				config.args = append(config.args, inArgs...)
 			} else {
+				builder.WriteString(columnName)
+				builder.WriteString(" ")
+				builder.WriteString(operator)
+
 				builder.WriteString(" ")
 				builder.WriteString("$")
 				builder.WriteString(strconv.Itoa(count))
@@ -128,13 +136,13 @@ func WithSafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) SQLC
 			config.args = append(config.args, item.GetValue())
 		}
 
+		if len(config.args) == 0 {
+			return nil
+		}
+
 		config.expression = strings.TrimSpace(builder.String())
 		config.sqlClause = where
 
 		return nil
 	}
-}
-
-func isChainingKey(value string) bool {
-	return strings.EqualFold(value, "AND") || strings.EqualFold(value, "OR")
 }

@@ -15,14 +15,18 @@ func buildIn(value any, index int) (string, []any) {
 	builder := bytes.Buffer{}
 	builder.WriteString("(")
 
-	var args []interface{}
+	var args []any
 
 	// Use reflection to handle different types
 	valSlice := reflect.ValueOf(value)
 	if valSlice.Kind() == reflect.Slice {
+		if valSlice.Len() == 0 {
+			return "", nil
+		}
+
 		for i := 0; i < valSlice.Len(); i++ {
 			builder.WriteString("$")
-			builder.WriteString(strconv.Itoa(index + i + 1))
+			builder.WriteString(strconv.Itoa(index + i))
 			builder.WriteString(", ")
 
 			args = append(args, valSlice.Index(i).Interface())
@@ -45,7 +49,7 @@ func buildIn(value any, index int) (string, []any) {
 	stringValues := strings.Split(str, ",")
 	for i, v := range stringValues {
 		builder.WriteString("$")
-		builder.WriteString(strconv.Itoa(index + i + 1))
+		builder.WriteString(strconv.Itoa(index + i))
 		builder.WriteString(", ")
 
 		args = append(args, v)

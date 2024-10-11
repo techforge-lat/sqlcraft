@@ -2,38 +2,69 @@ package sqlcraft
 
 import (
 	"strings"
+
+	"github.com/techforge-lat/dafi/v2"
 )
 
 type DeleteQuery struct {
-	table           string
-	returningValues []string
+	table            string
+	returningColumns []string
+
+	rawValues []any
+
+	sqlColumnByDomainField map[string]string
+	filters                dafi.Filters
 }
 
 func DeleteFrom(table string) DeleteQuery {
 	return DeleteQuery{
-		table:           table,
-		returningValues: []string{},
+		table:            table,
+		returningColumns: []string{},
 	}
 }
 
-func (u DeleteQuery) Returning(columns ...string) DeleteQuery {
-	u.returningValues = columns
+func (d DeleteQuery) Where(filters ...dafi.Filter) DeleteQuery {
+	d.filters = filters
 
-	return u
+	return d
 }
 
-func (u DeleteQuery) ToSQL() (Result, error) {
+func (d DeleteQuery) SqlColumnByDomainField(sqlColumnByDomainField map[string]string) DeleteQuery {
+	d.sqlColumnByDomainField = sqlColumnByDomainField
+
+	return d
+}
+
+func (d DeleteQuery) Returning(columns ...string) DeleteQuery {
+	d.returningColumns = columns
+
+	return d
+}
+
+func (d DeleteQuery) ToSQL() (Result, error) {
 	builder := strings.Builder{}
 
 	builder.WriteString("DELETE FROM ")
-	builder.WriteString(u.table)
+	builder.WriteString(d.table)
 
-	if len(u.returningValues) > 0 {
+	args := []any{}
+	if len(d.filters) > 0 {
+		whereResult, err := WhereSafe(len(d.rawValues), d.sqlColumnByDomainField, d.filters...)
+		if err != nil {
+			return Result{}, err
+		}
+		args = whereResult.Args
+
+		builder.WriteString(whereResult.Sql)
+	}
+
+	if len(d.returningColumns) > 0 {
 		builder.WriteString(" RETURNING ")
-		builder.WriteString(strings.Join(u.returningValues, ", "))
+		builder.WriteString(strings.Join(d.returningColumns, ", "))
 	}
 
 	return Result{
-		Sql: builder.String(),
+		Sql:  builder.String(),
+		Args: args,
 	}, nil
 }

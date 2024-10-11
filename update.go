@@ -3,6 +3,8 @@ package sqlcraft
 import (
 	"strconv"
 	"strings"
+
+	"github.com/techforge-lat/dafi/v2"
 )
 
 type UpdateQuery struct {
@@ -12,6 +14,9 @@ type UpdateQuery struct {
 	values          []any
 
 	isPartialUpdate bool
+
+	sqlColumnByDomainField map[string]string
+	filters                dafi.Filters
 }
 
 func Update(table string) UpdateQuery {
@@ -31,6 +36,18 @@ func (u UpdateQuery) WithColumns(columns ...string) UpdateQuery {
 
 func (u UpdateQuery) WithValues(values ...any) UpdateQuery {
 	u.values = values
+
+	return u
+}
+
+func (u UpdateQuery) Where(filters ...dafi.Filter) UpdateQuery {
+	u.filters = filters
+
+	return u
+}
+
+func (u UpdateQuery) SqlColumnByDomainField(sqlColumnByDomainField map[string]string) UpdateQuery {
+	u.sqlColumnByDomainField = sqlColumnByDomainField
 
 	return u
 }
@@ -77,6 +94,16 @@ func (u UpdateQuery) ToSQL() (Result, error) {
 		if i+1 < len(u.columns) {
 			builder.WriteString(", ")
 		}
+	}
+
+	if len(u.filters) > 0 {
+		whereResult, err := WhereSafe(len(u.values), u.sqlColumnByDomainField, u.filters...)
+		if err != nil {
+			return Result{}, err
+		}
+		u.values = append(u.values, whereResult.Args...)
+
+		builder.WriteString(whereResult.Sql)
 	}
 
 	if len(u.returningValues) > 0 {

@@ -3,6 +3,8 @@ package sqlcraft
 import (
 	"reflect"
 	"testing"
+
+	"github.com/techforge-lat/dafi/v2"
 )
 
 func TestDeleteQuery_ToSQL(t *testing.T) {
@@ -16,7 +18,8 @@ func TestDeleteQuery_ToSQL(t *testing.T) {
 			name:  "simple delete",
 			query: DeleteFrom("users"),
 			want: Result{
-				Sql: "DELETE FROM users",
+				Sql:  "DELETE FROM users",
+				Args: []any{},
 			},
 			wantErr: false,
 		},
@@ -24,7 +27,26 @@ func TestDeleteQuery_ToSQL(t *testing.T) {
 			name:  "delete with returning",
 			query: DeleteFrom("users").Returning("id"),
 			want: Result{
-				Sql: "DELETE FROM users RETURNING id",
+				Sql:  "DELETE FROM users RETURNING id",
+				Args: []any{},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "delete with returning and filters",
+			query: DeleteFrom("users").Where(dafi.Filter{Field: "email", Value: "hernan_rm@outlook.es"}).Returning("id"),
+			want: Result{
+				Sql:  "DELETE FROM users WHERE email = $1 RETURNING id",
+				Args: []any{"hernan_rm@outlook.es"},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "delete with returning and filters in",
+			query: DeleteFrom("users").Where(dafi.Filter{Field: "email", Operator: dafi.In, Value: []string{"hernan_rm@outlook.es", "brownie@gmail.com"}}).Returning("id"),
+			want: Result{
+				Sql:  "DELETE FROM users WHERE email IN ($1, $2) RETURNING id",
+				Args: []any{"hernan_rm@outlook.es", "brownie@gmail.com"},
 			},
 			wantErr: false,
 		},

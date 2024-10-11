@@ -29,7 +29,7 @@ func TestWhere(t *testing.T) {
 				},
 			},
 			want: Result{
-				Sql:  "WHERE email = $1",
+				Sql:  " WHERE email = $1",
 				Args: []any{"hernan_rm@outlook.es"},
 			},
 			wantErr: false,
@@ -51,7 +51,7 @@ func TestWhere(t *testing.T) {
 				},
 			},
 			want: Result{
-				Sql:  "WHERE email = $1 AND nickname = $2",
+				Sql:  " WHERE email = $1 AND nickname = $2",
 				Args: []any{"hernan_rm@outlook.es", "hernanreyes"},
 			},
 			wantErr: false,
@@ -74,7 +74,7 @@ func TestWhere(t *testing.T) {
 				},
 			},
 			want: Result{
-				Sql:  "WHERE email = $1 OR nickname = $2",
+				Sql:  " WHERE email = $1 OR nickname = $2",
 				Args: []any{"hernan_rm@outlook.es", "hernanreyes"},
 			},
 			wantErr: false,
@@ -99,7 +99,7 @@ func TestWhere(t *testing.T) {
 				},
 			},
 			want: Result{
-				Sql:  "WHERE (email = $1 OR nickname = $2)",
+				Sql:  " WHERE (email = $1 OR nickname = $2)",
 				Args: []any{"hernan_rm@outlook.es", "hernanreyes"},
 			},
 			wantErr: false,
@@ -137,7 +137,7 @@ func TestWhere(t *testing.T) {
 				},
 			},
 			want: Result{
-				Sql:  "WHERE (email = $1 OR nickname = $2) AND (phone_number = $3 OR full_name ILIKE $4)",
+				Sql:  " WHERE (email = $1 OR nickname = $2) AND (phone_number = $3 OR full_name ILIKE $4)",
 				Args: []any{"hernan_rm@outlook.es", "hernanreyes", "12345679", "Hernan Reyes"},
 			},
 			wantErr: false,
@@ -179,7 +179,7 @@ func TestWhere(t *testing.T) {
 				},
 			},
 			want: Result{
-				Sql:  "WHERE ((email = $1 OR nickname = $2) AND (phone_number = $3 OR full_name ILIKE $4))",
+				Sql:  " WHERE ((email = $1 OR nickname = $2) AND (phone_number = $3 OR full_name ILIKE $4))",
 				Args: []any{"hernan_rm@outlook.es", "hernanreyes", "12345679", "Hernan Reyes"},
 			},
 			wantErr: false,
@@ -196,7 +196,7 @@ func TestWhere(t *testing.T) {
 				},
 			},
 			want: Result{
-				Sql:  "WHERE id IN ($1, $2, $3)",
+				Sql:  " WHERE id IN ($1, $2, $3)",
 				Args: []any{uint(1), uint(2), uint(3)},
 			},
 			wantErr: false,
@@ -213,7 +213,7 @@ func TestWhere(t *testing.T) {
 				},
 			},
 			want: Result{
-				Sql:  "WHERE id NOT IN ($1, $2, $3)",
+				Sql:  " WHERE id NOT IN ($1, $2, $3)",
 				Args: []any{uint(1), uint(2), uint(3)},
 			},
 			wantErr: false,
@@ -230,7 +230,7 @@ func TestWhere(t *testing.T) {
 				},
 			},
 			want: Result{
-				Sql:  "WHERE price IN ($1, $2, $3)",
+				Sql:  " WHERE price IN ($1, $2, $3)",
 				Args: []any{1.1, 2.2, 3.3},
 			},
 			wantErr: false,
@@ -252,7 +252,7 @@ func TestWhere(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := Where(tt.args.filters...)
+			got, err := Where(0, tt.args.filters...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Where() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -3,6 +3,8 @@ package sqlcraft
 import (
 	"reflect"
 	"testing"
+
+	"github.com/techforge-lat/dafi/v2"
 )
 
 func TestUpdateQuery_ToSQL(t *testing.T) {
@@ -65,6 +67,24 @@ func TestUpdateQuery_ToSQL(t *testing.T) {
 				Args: nil,
 			},
 			wantErr: true,
+		},
+		{
+			name:  "update two fields with partial update and filters",
+			query: Update("employees").WithColumns("salary", "name").WithValues(4000, "Hernan").Where(dafi.Filter{Field: "email", Value: "hernan_rm@outlook.es"}).WithPartialUpdate(),
+			want: Result{
+				Sql:  "UPDATE employees SET salary = COALESCE($1, salary), name = COALESCE($2, name) WHERE email = $3",
+				Args: []any{4000, "Hernan", "hernan_rm@outlook.es"},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "update two fields with partial update and filters",
+			query: Update("employees").WithColumns("salary", "name").WithValues(4000, "Hernan").Where(dafi.Filter{Field: "email", Value: "hernan_rm@outlook.es"}, dafi.Filter{Field: "nickname", Operator: dafi.In, Value: []string{"hernan", "brownie"}}).WithPartialUpdate(),
+			want: Result{
+				Sql:  "UPDATE employees SET salary = COALESCE($1, salary), name = COALESCE($2, name) WHERE email = $3 AND nickname IN ($4, $5)",
+				Args: []any{4000, "Hernan", "hernan_rm@outlook.es", "hernan", "brownie"},
+			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {

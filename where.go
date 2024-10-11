@@ -31,7 +31,7 @@ var psqlOperatorByDafiOperator = map[dafi.FilterOperator]string{
 
 // WhereSafe maps domain field names to sql column names,
 // if a filter with an unknow domain field name is found it will return an error
-func WhereSafe(sqlColumnByDomainField map[string]string, filters ...dafi.Filter) (Result, error) {
+func WhereSafe(initialArgCount int, sqlColumnByDomainField map[string]string, filters ...dafi.Filter) (Result, error) {
 	if len(sqlColumnByDomainField) > 0 {
 		for i, filter := range filters {
 			sqlColumnName, ok := sqlColumnByDomainField[string(filter.Field)]
@@ -43,11 +43,11 @@ func WhereSafe(sqlColumnByDomainField map[string]string, filters ...dafi.Filter)
 		}
 	}
 
-	return Where(filters...)
+	return Where(initialArgCount, filters...)
 }
 
 // Where returns a WHERE sql sentence and if an invalid operator is found, it will return an error
-func Where(filters ...dafi.Filter) (Result, error) {
+func Where(initialArgCount int, filters ...dafi.Filter) (Result, error) {
 	if len(filters) == 0 {
 		return Result{}, nil
 	}
@@ -55,7 +55,7 @@ func Where(filters ...dafi.Filter) (Result, error) {
 	builder := strings.Builder{}
 	args := []any{}
 
-	builder.WriteString("WHERE ")
+	builder.WriteString(" WHERE ")
 	for i, filter := range filters {
 		if filter.IsGroupOpen {
 			if filter.GroupOpenQty == 0 {
@@ -75,7 +75,7 @@ func Where(filters ...dafi.Filter) (Result, error) {
 		}
 
 		if filter.Operator == dafi.In || filter.Operator == dafi.NotIn {
-			inResult := In(filter.Value, len(args)+1)
+			inResult := In(filter.Value, len(args)+1+initialArgCount)
 			if inResult.Sql == "" {
 				continue
 			}
@@ -93,7 +93,7 @@ func Where(filters ...dafi.Filter) (Result, error) {
 			builder.WriteString(" ")
 			builder.WriteString(operator)
 			builder.WriteString(" $")
-			builder.WriteString(strconv.Itoa(i + 1))
+			builder.WriteString(strconv.Itoa(i + 1 + initialArgCount))
 
 			args = append(args, filter.Value)
 		}
@@ -116,7 +116,7 @@ func Where(filters ...dafi.Filter) (Result, error) {
 	}
 
 	return Result{
-		Sql:  strings.TrimSpace(builder.String()),
+		Sql:  strings.TrimRight(builder.String(), " "),
 		Args: args,
 	}, nil
 }

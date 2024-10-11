@@ -13,6 +13,9 @@ type SelectQuery struct {
 	requiredColumns        map[string]struct{}
 	sqlColumnByDomainField map[string]string
 
+	rawSql    string
+	rawValues []any
+
 	filters    dafi.Filters
 	sorts      dafi.Sorts
 	pagination dafi.Pagination
@@ -21,6 +24,14 @@ type SelectQuery struct {
 func Select(columns ...string) SelectQuery {
 	return SelectQuery{
 		table:           "",
+		columns:         columns,
+		requiredColumns: make(map[string]struct{}),
+	}
+}
+
+func SelectRaw(sql string, columns ...string) SelectQuery {
+	return SelectQuery{
+		rawSql:          sql,
 		columns:         columns,
 		requiredColumns: make(map[string]struct{}),
 	}
@@ -115,20 +126,18 @@ func (s SelectQuery) ToSQL() (Result, error) {
 
 	args := []any{}
 	if len(s.filters) > 0 {
-		whereResult, err := WhereSafe(s.sqlColumnByDomainField, s.filters...)
+		whereResult, err := WhereSafe(len(s.rawValues), s.sqlColumnByDomainField, s.filters...)
 		if err != nil {
 			return Result{}, err
 		}
 		args = append(args, whereResult.Args...)
 
-		builder.WriteString(" ")
 		builder.WriteString(whereResult.Sql)
 	}
 
 	if len(s.sorts) > 0 {
 		sortSql := BuildOrderBy(s.sorts)
 
-		builder.WriteString(" ")
 		builder.WriteString(sortSql)
 	}
 
@@ -147,7 +156,7 @@ func BuildOrderBy(sorts dafi.Sorts) string {
 	}
 
 	builder := strings.Builder{}
-	builder.WriteString("ORDER BY ")
+	builder.WriteString(" ORDER BY ")
 	for i, sort := range sorts {
 		builder.WriteString(string(sort.Field))
 

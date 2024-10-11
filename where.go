@@ -9,7 +9,10 @@ import (
 	"github.com/techforge-lat/dafi/v2"
 )
 
-var ErrInvalidOperator = errors.New("invalid dafi operator")
+var (
+	ErrInvalidOperator  = errors.New("invalid dafi operator")
+	ErrInvalidFieldName = errors.New("invalid field name")
+)
 
 var psqlOperatorByDafiOperator = map[dafi.FilterOperator]string{
 	dafi.Equal:          "=",
@@ -26,8 +29,26 @@ var psqlOperatorByDafiOperator = map[dafi.FilterOperator]string{
 	dafi.NotIn:          "NOT IN",
 }
 
-func Where(filters dafi.Filters) (Result, error) {
-	if filters.IsZero() {
+// WhereSafe maps domain field names to sql column names,
+// if a filter with an unknow domain field name is found it will return an error
+func WhereSafe(sqlColumnByDomainField map[string]string, filters ...dafi.Filter) (Result, error) {
+	if len(sqlColumnByDomainField) > 0 {
+		for i, filter := range filters {
+			sqlColumnName, ok := sqlColumnByDomainField[string(filter.Field)]
+			if !ok {
+				return Result{}, ErrInvalidFieldName
+			}
+
+			filters[i].Field = dafi.FilterField(sqlColumnName)
+		}
+	}
+
+	return Where(filters...)
+}
+
+// Where returns a WHERE sql sentence and if an invalid operator is found, it will return an error
+func Where(filters ...dafi.Filter) (Result, error) {
+	if len(filters) == 0 {
 		return Result{}, nil
 	}
 
@@ -42,6 +63,10 @@ func Where(filters dafi.Filters) (Result, error) {
 			}
 
 			builder.WriteString(strings.Repeat("(", filter.GroupOpenQty))
+		}
+
+		if filter.Operator == "" {
+			filter.Operator = dafi.Equal
 		}
 
 		operator, ok := psqlOperatorByDafiOperator[filter.Operator]

@@ -7,7 +7,8 @@ import (
 )
 
 var (
-	ErrEmptyValues     = errors.New("empty values in insert")
+	ErrEmptyValues     = errors.New("empty values in query")
+	ErrEmptyColumns    = errors.New("empty columns in query")
 	ErrMissMatchValues = errors.New("miss match values for given columns")
 )
 

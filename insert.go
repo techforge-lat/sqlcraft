@@ -11,39 +11,39 @@ var (
 	ErrMissMatchValues = errors.New("miss match values for given columns")
 )
 
-type Insert struct {
+type InsertQuery struct {
 	table            string
 	columns          []string
 	returningColumns []string
 	values           []any
 }
 
-func InsertInto(tableName string) Insert {
-	return Insert{
+func InsertInto(tableName string) InsertQuery {
+	return InsertQuery{
 		table:  tableName,
 		values: make([]any, 0),
 	}
 }
 
-func (i Insert) Columns(columns []string) Insert {
+func (i InsertQuery) WithColumns(columns ...string) InsertQuery {
 	i.columns = columns
 
 	return i
 }
 
-func (i Insert) Values(args ...any) Insert {
-	i.values = append(i.values, args)
+func (i InsertQuery) WithValues(values ...any) InsertQuery {
+	i.values = append(i.values, values...)
 
 	return i
 }
 
-func (i Insert) Returning(columns []string) Insert {
+func (i InsertQuery) Returning(columns ...string) InsertQuery {
 	i.returningColumns = columns
 
 	return i
 }
 
-func (i Insert) ToSql() (Result, error) {
+func (i InsertQuery) ToSql() (Result, error) {
 	if len(i.values) == 0 {
 		return Result{}, ErrEmptyValues
 	}

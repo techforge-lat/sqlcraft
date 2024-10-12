@@ -1,94 +1,118 @@
 package sqlcraft
 
 import (
-	"bytes"
-	"fmt"
+	"strconv"
 	"strings"
+
+	"github.com/techforge-lat/dafi/v2"
 )
 
 type UpdateQuery struct {
-	query      string
-	sqlClauses SQLClauses
-	argsCount  uint
-	err        error
+	table           string
+	columns         []string
+	returningValues []string
+	values          []any
+
+	isPartialUpdate bool
+
+	sqlColumnByDomainField map[string]string
+	filters                dafi.Filters
 }
 
-func RawUpdate(sql string, sqlClauseConfigs ...SQLClause) UpdateQuery {
-	hasWhere := strings.Contains(strings.ToUpper(sql), strings.ToUpper(string(where)))
-	sqlClauseConfigs = append(sqlClauseConfigs, withExcludeWhereKeyword(hasWhere))
-
+func Update(table string) UpdateQuery {
 	return UpdateQuery{
-		query:      sql,
-		sqlClauses: sqlClauseConfigs,
+		table:           table,
+		columns:         []string{},
+		returningValues: []string{},
+		values:          []any{},
 	}
 }
 
-// Update creates a base UPDATE sql expression with optional default expressions
-// When executing the sql, you must first pass the args for the SET expression
-// and then pass the args for the used option expression in the corresponding order
-func Update(tableName string, columns []string, sqlClauseConfigs ...SQLClause) UpdateQuery {
-	if tableName == "" {
-		return UpdateQuery{
-			err: ErrMissingTableName,
-		}
-	}
+func (u UpdateQuery) WithColumns(columns ...string) UpdateQuery {
+	u.columns = columns
 
-	if len(columns) == 0 {
-		return UpdateQuery{
-			err: ErrMissingColumns,
-		}
-	}
+	return u
+}
 
-	query := bytes.Buffer{}
+func (u UpdateQuery) WithValues(values ...any) UpdateQuery {
+	u.values = values
 
-	query.WriteString("UPDATE ")
-	query.WriteString(tableName)
-	query.WriteString(" SET ")
+	return u
+}
 
-	columnsLength := len(columns) - 1
-	for i, column := range columns {
-		query.WriteString(column)
-		query.WriteString(fmt.Sprintf(" = $%d", i+1))
+func (u UpdateQuery) Where(filters ...dafi.Filter) UpdateQuery {
+	u.filters = filters
 
-		if i < columnsLength {
-			query.WriteString(", ")
-		}
-	}
+	return u
+}
 
-	return UpdateQuery{
-		query:      query.String(),
-		sqlClauses: sqlClauseConfigs,
-		argsCount:  uint(columnsLength) + 1,
-	}
+func (u UpdateQuery) SqlColumnByDomainField(sqlColumnByDomainField map[string]string) UpdateQuery {
+	u.sqlColumnByDomainField = sqlColumnByDomainField
+
+	return u
 }
 
 func (u UpdateQuery) Returning(columns ...string) UpdateQuery {
-	u.sqlClauses = append(u.sqlClauses, WithReturning(columns...))
+	u.returningValues = columns
+
 	return u
 }
 
-func (u UpdateQuery) Where(items ...FilterItem) UpdateQuery {
-	u.sqlClauses = append(u.sqlClauses, WithWhere(items...))
+func (u UpdateQuery) WithPartialUpdate() UpdateQuery {
+	u.isPartialUpdate = true
+
 	return u
 }
 
-func (u UpdateQuery) SafeWhere(allowedColumns AllowedColumns, items ...FilterItem) UpdateQuery {
-	u.sqlClauses = append(u.sqlClauses, WithSafeWhere(allowedColumns, items...))
-	return u
-}
+func (u UpdateQuery) ToSQL() (Result, error) {
+	if len(u.values) > 0 && len(u.values) != len(u.columns) {
+		return Result{}, ErrMissMatchValues
+	}
 
-func (u UpdateQuery) sql() string {
-	return u.query
-}
+	builder := strings.Builder{}
 
-func (u UpdateQuery) defaultSQLClauseConfigs() SQLClauses {
-	return u.sqlClauses
-}
+	builder.WriteString("UPDATE ")
+	builder.WriteString(u.table)
+	builder.WriteString(" SET ")
 
-func (u UpdateQuery) paramsCount() uint {
-	return u.argsCount
-}
+	for i, column := range u.columns {
+		if u.isPartialUpdate {
+			builder.WriteString(column)
+			builder.WriteString(" = ")
+			builder.WriteString("COALESCE(")
+			builder.WriteString("$")
+			builder.WriteString(strconv.Itoa(i + 1))
+			builder.WriteString(", ")
+			builder.WriteString(column)
+			builder.WriteString(")")
+		} else {
+			builder.WriteString(column)
+			builder.WriteString(" = $")
+			builder.WriteString(strconv.Itoa(i + 1))
+		}
 
-func (u UpdateQuery) Err() error {
-	return u.err
+		if i+1 < len(u.columns) {
+			builder.WriteString(", ")
+		}
+	}
+
+	if len(u.filters) > 0 {
+		whereResult, err := WhereSafe(len(u.values), u.sqlColumnByDomainField, u.filters...)
+		if err != nil {
+			return Result{}, err
+		}
+		u.values = append(u.values, whereResult.Args...)
+
+		builder.WriteString(whereResult.Sql)
+	}
+
+	if len(u.returningValues) > 0 {
+		builder.WriteString(" RETURNING ")
+		builder.WriteString(strings.Join(u.returningValues, ", "))
+	}
+
+	return Result{
+		Sql:  builder.String(),
+		Args: u.values,
+	}, nil
 }

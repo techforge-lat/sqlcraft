@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-func buildIn(value any, index int) (string, []any) {
+func In(value any, initialArgCount int) Result {
 	if value == nil {
-		return "", nil
+		return Result{}
 	}
 
 	builder := bytes.Buffer{}
@@ -17,16 +17,16 @@ func buildIn(value any, index int) (string, []any) {
 
 	var args []any
 
-	// Use reflection to handle different types
+	// uses reflection to handle different types
 	valSlice := reflect.ValueOf(value)
 	if valSlice.Kind() == reflect.Slice {
 		if valSlice.Len() == 0 {
-			return "", nil
+			return Result{}
 		}
 
 		for i := 0; i < valSlice.Len(); i++ {
 			builder.WriteString("$")
-			builder.WriteString(strconv.Itoa(index + i))
+			builder.WriteString(strconv.Itoa(initialArgCount + i))
 			builder.WriteString(", ")
 
 			args = append(args, valSlice.Index(i).Interface())
@@ -38,18 +38,21 @@ func buildIn(value any, index int) (string, []any) {
 
 		builder.WriteString(")")
 
-		return builder.String(), args
+		return Result{
+			Sql:  builder.String(),
+			Args: args,
+		}
 	}
 
 	str, ok := value.(string)
 	if !ok {
-		return "", nil
+		return Result{}
 	}
 
 	stringValues := strings.Split(str, ",")
 	for i, v := range stringValues {
 		builder.WriteString("$")
-		builder.WriteString(strconv.Itoa(index + i))
+		builder.WriteString(strconv.Itoa(initialArgCount + i))
 		builder.WriteString(", ")
 
 		args = append(args, v)
@@ -58,5 +61,8 @@ func buildIn(value any, index int) (string, []any) {
 	builder.Truncate(builder.Len() - 2)
 	builder.WriteString(")")
 
-	return builder.String(), args
+	return Result{
+		Sql:  builder.String(),
+		Args: args,
+	}
 }

@@ -1,74 +1,83 @@
 package sqlcraft
 
 import (
-	"errors"
+	"reflect"
 	"testing"
 )
 
-func TestNewInsert(t *testing.T) {
-	type args struct {
-		tableName string
-		columns   []string
+func TestInsert_ToSql(t *testing.T) {
+	type fields struct {
+		table            string
+		columns          []string
+		returningColumns []string
+		values           []any
 	}
 	tests := []struct {
 		name    string
-		args    args
-		want    InsertQuery
+		query   InsertQuery
+		fields  fields
+		want    Result
 		wantErr bool
 	}{
 		{
-			name: "multiple columns",
-			args: args{
-				tableName: "users",
-				columns:   []string{"id", "name", "email", "password"},
+			name:  "standard insert",
+			query: InsertInto("users").WithColumns("first_name", "last_name", "email", "password").WithValues("Hernan", nil, "hernan_rm@outlook.es", "secrethash"),
+			want: Result{
+				Sql:  "INSERT INTO users (first_name, last_name, email, password) VALUES ($1, $2, $3, $4)",
+				Args: []any{"Hernan", nil, "hernan_rm@outlook.es", "secrethash"},
 			},
-			want: InsertQuery{
-				query: "INSERT INTO users (id, name, email, password) VALUES ($1, $2, $3, $4)",
-			},
+			wantErr: false,
 		},
 		{
-			name: "one column",
-			args: args{
-				tableName: "users",
-				columns:   []string{"id"},
+			name:  "standard insert with returning",
+			query: InsertInto("users").WithColumns("first_name", "last_name", "email", "password").WithValues("Hernan", nil, "hernan_rm@outlook.es", "secrethash").Returning("id", "created_at"),
+			want: Result{
+				Sql:  "INSERT INTO users (first_name, last_name, email, password) VALUES ($1, $2, $3, $4) RETURNING id, created_at",
+				Args: []any{"Hernan", nil, "hernan_rm@outlook.es", "secrethash"},
 			},
-
-			want: InsertQuery{
-				query: "INSERT INTO users (id) VALUES ($1)",
-			},
+			wantErr: false,
 		},
 		{
-			name: "missing columns",
-			args: args{
-				tableName: "users",
-				columns:   nil,
+			name: "standard insert with returning and multiple row values",
+			fields: fields{
+				table:            "users",
+				columns:          []string{"first_name", "last_name", "email", "password"},
+				returningColumns: []string{"id", "created_at"},
+				values:           []any{"Hernan", nil, "hernan_rm@outlook.es", "secrethash", "Brownie", nil, "brownie@gmail.com", "secrethash"},
 			},
-			want: InsertQuery{
-				err: ErrMissingColumns,
+			query: InsertInto("users").
+				WithColumns("first_name", "last_name", "email", "password").
+				WithValues("Hernan", nil, "hernan_rm@outlook.es", "secrethash").
+				WithValues("Brownie", nil, "brownie@gmail.com", "secrethash").
+				Returning("id", "created_at"),
+			want: Result{
+				Sql:  "INSERT INTO users (first_name, last_name, email, password) VALUES ($1, $2, $3, $4), ($5, $6, $7, $8) RETURNING id, created_at",
+				Args: []any{"Hernan", nil, "hernan_rm@outlook.es", "secrethash", "Brownie", nil, "brownie@gmail.com", "secrethash"},
 			},
+			wantErr: false,
+		},
+		{
+			name:    "error empty values",
+			query:   InsertInto("users").WithColumns("first_name", "last_name", "email", "password").Returning("id", "created_at"),
+			want:    Result{},
 			wantErr: true,
 		},
 		{
-			name: "missing table name",
-			args: args{
-				tableName: "",
-				columns:   nil,
-			},
-			want: InsertQuery{
-				err: ErrMissingTableName,
-			},
+			name:    "missmatch values",
+			query:   InsertInto("users").WithColumns("first_name", "last_name", "email", "password").WithValues("hernan").Returning("id", "created_at"),
+			want:    Result{},
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := Insert(tt.args.tableName, tt.args.columns)
-			if got.query != tt.want.query {
-				t.Errorf("NewInsert() = %v, want %v", got.query, tt.want.query)
+			got, err := tt.query.ToSql()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Insert.ToSql() error = \n%v, wantErr %v", err, tt.wantErr)
+				return
 			}
-
-			if tt.wantErr && !errors.Is(got.err, tt.want.err) {
-				t.Errorf("NewInsert() = %v, want %v", got.err, tt.want.err)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Insert.ToSql() = %v, want %v", got, tt.want)
 			}
 		})
 	}

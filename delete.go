@@ -2,69 +2,69 @@ package sqlcraft
 
 import (
 	"strings"
+
+	"github.com/techforge-lat/dafi/v2"
 )
 
 type DeleteQuery struct {
-	query      string
-	sqlClauses SQLClauses
-	err        error
+	table            string
+	returningColumns []string
+
+	rawValues []any
+
+	sqlColumnByDomainField map[string]string
+	filters                dafi.Filters
 }
 
-func Delete(tableName string, defaultOpts ...SQLClause) DeleteQuery {
-	if tableName == "" {
-		return DeleteQuery{
-			err: ErrMissingTableName,
-		}
-	}
-
-	query := strings.Builder{}
-
-	query.WriteString("DELETE FROM ")
-	query.WriteString(tableName)
-
+func DeleteFrom(table string) DeleteQuery {
 	return DeleteQuery{
-		query:      query.String(),
-		sqlClauses: defaultOpts,
+		table:            table,
+		returningColumns: []string{},
 	}
 }
 
-func RawDelete(sql string, defaultOpts ...SQLClause) DeleteQuery {
-	hasWhere := strings.Contains(strings.ToUpper(sql), strings.ToUpper(string(where)))
-	defaultOpts = append(defaultOpts, withExcludeWhereKeyword(hasWhere))
+func (d DeleteQuery) Where(filters ...dafi.Filter) DeleteQuery {
+	d.filters = filters
 
-	return DeleteQuery{
-		query:      sql,
-		sqlClauses: defaultOpts,
-	}
+	return d
+}
+
+func (d DeleteQuery) SqlColumnByDomainField(sqlColumnByDomainField map[string]string) DeleteQuery {
+	d.sqlColumnByDomainField = sqlColumnByDomainField
+
+	return d
 }
 
 func (d DeleteQuery) Returning(columns ...string) DeleteQuery {
-	d.sqlClauses = append(d.sqlClauses, WithReturning(columns...))
+	d.returningColumns = columns
+
 	return d
 }
 
-func (d DeleteQuery) Where(collection ...FilterItem) DeleteQuery {
-	d.sqlClauses = append(d.sqlClauses, WithWhere(collection...))
-	return d
-}
+func (d DeleteQuery) ToSQL() (Result, error) {
+	builder := strings.Builder{}
 
-func (d DeleteQuery) SafeWhere(allowedColumns AllowedColumns, collection ...FilterItem) DeleteQuery {
-	d.sqlClauses = append(d.sqlClauses, WithSafeWhere(allowedColumns, collection...))
-	return d
-}
+	builder.WriteString("DELETE FROM ")
+	builder.WriteString(d.table)
 
-func (d DeleteQuery) sql() string {
-	return d.query
-}
+	args := []any{}
+	if len(d.filters) > 0 {
+		whereResult, err := WhereSafe(len(d.rawValues), d.sqlColumnByDomainField, d.filters...)
+		if err != nil {
+			return Result{}, err
+		}
+		args = whereResult.Args
 
-func (d DeleteQuery) defaultSQLClauseConfigs() SQLClauses {
-	return d.sqlClauses
-}
+		builder.WriteString(whereResult.Sql)
+	}
 
-func (d DeleteQuery) paramsCount() uint {
-	return 0
-}
+	if len(d.returningColumns) > 0 {
+		builder.WriteString(" RETURNING ")
+		builder.WriteString(strings.Join(d.returningColumns, ", "))
+	}
 
-func (d DeleteQuery) Err() error {
-	return d.err
+	return Result{
+		Sql:  builder.String(),
+		Args: args,
+	}, nil
 }

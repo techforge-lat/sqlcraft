@@ -1,77 +1,101 @@
 package sqlcraft
 
 import (
-	"errors"
+	"reflect"
 	"testing"
+
+	"github.com/techforge-lat/dafi/v2"
 )
 
-func TestNewUpdate(t *testing.T) {
-	type args struct {
-		tableName   string
-		columns     []string
-		defualtOpts []SQLClause
-	}
+func TestUpdateQuery_ToSQL(t *testing.T) {
 	tests := []struct {
 		name    string
-		args    args
-		want    UpdateQuery
+		query   UpdateQuery
+		want    Result
 		wantErr bool
 	}{
 		{
-			name: "multiple columns",
-			args: args{
-				tableName: "users",
-				columns:   []string{"id", "name", "email", "password"},
-			},
-			want: UpdateQuery{
-				query: "UPDATE users SET id = $1, name = $2, email = $3, password = $4",
+			name:  "update one field",
+			query: Update("employees").WithColumns("salary").WithValues(4000),
+			want: Result{
+				Sql:  "UPDATE employees SET salary = $1",
+				Args: []any{4000},
 			},
 			wantErr: false,
 		},
 		{
-			name: "one column",
-			args: args{
-				tableName: "users",
-				columns:   []string{"id"},
-			},
-			want: UpdateQuery{
-				query: "UPDATE users SET id = $1",
+			name:  "update two fields",
+			query: Update("employees").WithColumns("salary", "name").WithValues(4000, "Hernan"),
+			want: Result{
+				Sql:  "UPDATE employees SET salary = $1, name = $2",
+				Args: []any{4000, "Hernan"},
 			},
 			wantErr: false,
 		},
 		{
-			name: "missing columns",
-			args: args{
-				tableName: "users",
-				columns:   nil,
+			name:  "update two fields with returning",
+			query: Update("employees").WithColumns("salary", "name").WithValues(4000, "Hernan").Returning("id"),
+			want: Result{
+				Sql:  "UPDATE employees SET salary = $1, name = $2 RETURNING id",
+				Args: []any{4000, "Hernan"},
 			},
-			want: UpdateQuery{
-				err: ErrMissingColumns,
+			wantErr: false,
+		},
+		{
+			name:  "update two fields with partial update",
+			query: Update("employees").WithColumns("salary", "name").WithValues(4000, "Hernan").WithPartialUpdate(),
+			want: Result{
+				Sql:  "UPDATE employees SET salary = COALESCE($1, salary), name = COALESCE($2, name)",
+				Args: []any{4000, "Hernan"},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "update without providen values",
+			query: Update("employees").WithColumns("salary", "name").WithPartialUpdate(),
+			want: Result{
+				Sql:  "UPDATE employees SET salary = COALESCE($1, salary), name = COALESCE($2, name)",
+				Args: []any{},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "error with missmatch of values",
+			query: Update("employees").WithColumns("salary", "name").WithValues("salary").WithPartialUpdate(),
+			want: Result{
+				Sql:  "",
+				Args: nil,
 			},
 			wantErr: true,
 		},
 		{
-			name: "missing table name",
-			args: args{
-				tableName: "",
-				columns:   nil,
+			name:  "update two fields with partial update and filters",
+			query: Update("employees").WithColumns("salary", "name").WithValues(4000, "Hernan").Where(dafi.Filter{Field: "email", Value: "hernan_rm@outlook.es"}).WithPartialUpdate(),
+			want: Result{
+				Sql:  "UPDATE employees SET salary = COALESCE($1, salary), name = COALESCE($2, name) WHERE email = $3",
+				Args: []any{4000, "Hernan", "hernan_rm@outlook.es"},
 			},
-			want: UpdateQuery{
-				err: ErrMissingTableName,
+			wantErr: false,
+		},
+		{
+			name:  "update two fields with partial update and filters",
+			query: Update("employees").WithColumns("salary", "name").WithValues(4000, "Hernan").Where(dafi.Filter{Field: "email", Value: "hernan_rm@outlook.es"}, dafi.Filter{Field: "nickname", Operator: dafi.In, Value: []string{"hernan", "brownie"}}).WithPartialUpdate(),
+			want: Result{
+				Sql:  "UPDATE employees SET salary = COALESCE($1, salary), name = COALESCE($2, name) WHERE email = $3 AND nickname IN ($4, $5)",
+				Args: []any{4000, "Hernan", "hernan_rm@outlook.es", "hernan", "brownie"},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := Update(tt.args.tableName, tt.args.columns, tt.args.defualtOpts...)
-			if got.query != tt.want.query {
-				t.Errorf("NewInsert() = %v, want %v", got.query, tt.want.query)
+			got, err := tt.query.ToSQL()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("UpdateQuery.ToSQL() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
-
-			if tt.wantErr && !errors.Is(got.err, tt.want.err) {
-				t.Errorf("NewInsert() = %v, want %v", got.err, tt.want.err)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("UpdateQuery.ToSQL() = %v, want %v", got, tt.want)
 			}
 		})
 	}

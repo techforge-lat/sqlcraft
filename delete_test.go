@@ -1,52 +1,65 @@
 package sqlcraft
 
 import (
-	"errors"
+	"reflect"
 	"testing"
+
+	"github.com/techforge-lat/dafi/v2"
 )
 
-func TestNewDelete(t *testing.T) {
-	type args struct {
-		tableName   string
-		defualtOpts []SQLClause
-	}
+func TestDeleteQuery_ToSQL(t *testing.T) {
 	tests := []struct {
 		name    string
-		args    args
-		want    DeleteQuery
+		query   DeleteQuery
+		want    Result
 		wantErr bool
 	}{
 		{
-			name: "withour where",
-			args: args{
-				tableName: "users",
-			},
-			want: DeleteQuery{
-				query: "DELETE FROM users",
+			name:  "simple delete",
+			query: DeleteFrom("users"),
+			want: Result{
+				Sql:  "DELETE FROM users",
+				Args: []any{},
 			},
 			wantErr: false,
 		},
 		{
-			name: "with ONLY",
-			args: args{
-				tableName: "ONLY users",
+			name:  "delete with returning",
+			query: DeleteFrom("users").Returning("id"),
+			want: Result{
+				Sql:  "DELETE FROM users RETURNING id",
+				Args: []any{},
 			},
-			want: DeleteQuery{
-				query: "DELETE FROM ONLY users",
+			wantErr: false,
+		},
+		{
+			name:  "delete with returning and filters",
+			query: DeleteFrom("users").Where(dafi.Filter{Field: "email", Value: "hernan_rm@outlook.es"}).Returning("id"),
+			want: Result{
+				Sql:  "DELETE FROM users WHERE email = $1 RETURNING id",
+				Args: []any{"hernan_rm@outlook.es"},
+			},
+			wantErr: false,
+		},
+		{
+			name:  "delete with returning and filters in",
+			query: DeleteFrom("users").Where(dafi.Filter{Field: "email", Operator: dafi.In, Value: []string{"hernan_rm@outlook.es", "brownie@gmail.com"}}).Returning("id"),
+			want: Result{
+				Sql:  "DELETE FROM users WHERE email IN ($1, $2) RETURNING id",
+				Args: []any{"hernan_rm@outlook.es", "brownie@gmail.com"},
 			},
 			wantErr: false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := Delete(tt.args.tableName, tt.args.defualtOpts...)
-			if got.query != tt.want.query {
-				t.Errorf("NewInsert() = %v, want %v", got.query, tt.want.query)
+			got, err := tt.query.ToSQL()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("DeleteQuery.ToSQL() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
-
-			if tt.wantErr && !errors.Is(got.err, tt.want.err) {
-				t.Errorf("NewInsert() = %v, want %v", got.err, tt.want.err)
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("DeleteQuery.ToSQL() = %v, want %v", got, tt.want)
 			}
 		})
 	}

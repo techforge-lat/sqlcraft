@@ -13,9 +13,6 @@ type SelectQuery struct {
 	requiredColumns        map[string]struct{}
 	sqlColumnByDomainField map[string]string
 
-	rawSql    string
-	rawValues []any
-
 	filters    dafi.Filters
 	sorts      dafi.Sorts
 	pagination dafi.Pagination
@@ -24,14 +21,6 @@ type SelectQuery struct {
 func Select(columns ...string) SelectQuery {
 	return SelectQuery{
 		table:           "",
-		columns:         columns,
-		requiredColumns: make(map[string]struct{}),
-	}
-}
-
-func SelectRaw(sql string, columns ...string) SelectQuery {
-	return SelectQuery{
-		rawSql:          sql,
 		columns:         columns,
 		requiredColumns: make(map[string]struct{}),
 	}
@@ -126,7 +115,7 @@ func (s SelectQuery) ToSQL() (Result, error) {
 
 	args := []any{}
 	if len(s.filters) > 0 {
-		whereResult, err := WhereSafe(len(s.rawValues), s.sqlColumnByDomainField, s.filters...)
+		whereResult, err := WhereSafe(0, s.sqlColumnByDomainField, s.filters...)
 		if err != nil {
 			return Result{}, err
 		}

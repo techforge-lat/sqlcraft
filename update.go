@@ -46,7 +46,7 @@ func (u UpdateQuery) Where(filters ...dafi.Filter) UpdateQuery {
 	return u
 }
 
-func (u UpdateQuery) SqlColumnByDomainField(sqlColumnByDomainField map[string]string) UpdateQuery {
+func (u UpdateQuery) SQLColumnByDomainField(sqlColumnByDomainField map[string]string) UpdateQuery {
 	u.sqlColumnByDomainField = sqlColumnByDomainField
 
 	return u

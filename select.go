@@ -65,7 +65,7 @@ func (s SelectQuery) RequiredColumns(columns ...string) SelectQuery {
 	return s
 }
 
-func (s SelectQuery) SqlColumnByDomainField(sqlColumnByDomainField map[string]string) SelectQuery {
+func (s SelectQuery) SQLColumnByDomainField(sqlColumnByDomainField map[string]string) SelectQuery {
 	s.sqlColumnByDomainField = sqlColumnByDomainField
 
 	return s

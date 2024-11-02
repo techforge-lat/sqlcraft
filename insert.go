@@ -44,7 +44,7 @@ func (i InsertQuery) Returning(columns ...string) InsertQuery {
 	return i
 }
 
-func (i InsertQuery) ToSql() (Result, error) {
+func (i InsertQuery) ToSQL() (Result, error) {
 	if len(i.values) == 0 {
 		return Result{}, ErrEmptyValues
 	}

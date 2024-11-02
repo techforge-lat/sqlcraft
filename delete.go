@@ -29,7 +29,7 @@ func (d DeleteQuery) Where(filters ...dafi.Filter) DeleteQuery {
 	return d
 }
 
-func (d DeleteQuery) SqlColumnByDomainField(sqlColumnByDomainField map[string]string) DeleteQuery {
+func (d DeleteQuery) SQLColumnByDomainField(sqlColumnByDomainField map[string]string) DeleteQuery {
 	d.sqlColumnByDomainField = sqlColumnByDomainField
 
 	return d

@@ -110,9 +110,11 @@ func Where(initialArgCount int, filters ...dafi.Filter) (Result, error) {
 			builder.WriteString(strings.Repeat(")", filter.GroupCloseQty))
 		}
 
-		builder.WriteString(" ")
-		builder.WriteString(string(filter.ChainingKey))
-		builder.WriteString(" ")
+		if i < len(filters)-1 {
+			builder.WriteString(" ")
+			builder.WriteString(string(filter.ChainingKey))
+			builder.WriteString(" ")
+		}
 	}
 
 	return Result{

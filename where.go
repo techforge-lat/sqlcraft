@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"github.com/techforge-lat/dafi/v2"
+	"github.com/techforge-lat/errortrace/v2"
+	"github.com/techforge-lat/errortrace/v2/errtype"
 )
 
 var (
@@ -39,7 +41,10 @@ func WhereSafe(initialArgCount int, sqlColumnByDomainField map[string]string, fi
 		for i, filter := range filters {
 			sqlColumnName, ok := sqlColumnByDomainField[string(filter.Field)]
 			if !ok {
-				return Result{}, ErrInvalidFieldName
+				return Result{}, errortrace.
+					OnError(ErrInvalidFieldName).
+					WithCode(errtype.UnprocessableEntity).
+					WithMessage(fmt.Sprintf("field %q not found", filter.Field))
 			}
 
 			filters[i].Field = dafi.FilterField(sqlColumnName)
@@ -74,7 +79,10 @@ func Where(initialArgCount int, filters ...dafi.Filter) (Result, error) {
 
 		operator, ok := psqlOperatorByDafiOperator[filter.Operator]
 		if !ok {
-			return Result{}, errors.Join(fmt.Errorf("operator %q not found", filter.Operator), ErrInvalidOperator)
+			return Result{}, errortrace.
+				OnError(errors.Join(fmt.Errorf("operator %q not found", filter.Operator), ErrInvalidOperator)).
+				WithCode(errtype.UnprocessableEntity).
+				WithMessage(fmt.Sprintf("operator %q not found", filter.Operator))
 		}
 
 		switch filter.Operator {

@@ -101,7 +101,9 @@ func (s SelectQuery) ToSQL() (Result, error) {
 			if _, ok := s.requiredColumns[col]; ok {
 				builder.WriteString(col)
 			} else {
-				builder.WriteString("null")
+				builder.WriteString("null ")
+				builder.WriteString("AS ")
+				builder.WriteString(col)
 			}
 
 			if i < len(s.columns)-1 {

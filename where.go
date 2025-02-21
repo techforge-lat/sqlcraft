@@ -24,9 +24,12 @@ var psqlOperatorByDafiOperator = map[dafi.FilterOperator]string{
 	dafi.Contains:       "ILIKE",
 	dafi.NotContains:    "NOT ILIKE",
 	dafi.Is:             "IS",
+	dafi.IsNull:         "IS NULL",
 	dafi.IsNot:          "IS NOT",
+	dafi.IsNotNull:      "IS NOT NULL",
 	dafi.In:             "IN",
 	dafi.NotIn:          "NOT IN",
+	dafi.Default:        "",
 }
 
 // WhereSafe maps domain field names to sql column names,
@@ -74,7 +77,8 @@ func Where(initialArgCount int, filters ...dafi.Filter) (Result, error) {
 			return Result{}, errors.Join(fmt.Errorf("operator %q not found", filter.Operator), ErrInvalidOperator)
 		}
 
-		if filter.Operator == dafi.In || filter.Operator == dafi.NotIn {
+		switch filter.Operator {
+		case dafi.In, dafi.NotIn:
 			inResult := In(filter.Value, len(args)+1+initialArgCount)
 			if inResult.Sql == "" {
 				continue
@@ -88,7 +92,14 @@ func Where(initialArgCount int, filters ...dafi.Filter) (Result, error) {
 			builder.WriteString(inResult.Sql)
 
 			args = append(args, inResult.Args...)
-		} else {
+		case dafi.Is, dafi.IsNot, dafi.IsNull, dafi.IsNotNull:
+			builder.WriteString(string(filter.Field))
+			builder.WriteString(" ")
+			builder.WriteString(operator)
+		case dafi.Default:
+			builder.WriteString(string(filter.Field))
+		default:
+
 			builder.WriteString(string(filter.Field))
 			builder.WriteString(" ")
 			builder.WriteString(operator)

@@ -11,5 +11,5 @@ require (
 
 require (
 	github.com/techforge-lat/dafi v1.1.0 // indirect
-	github.com/techforge-lat/dafi/v2 v2.0.0 // indirect
+	github.com/techforge-lat/dafi/v2 v2.4.0 // indirect
 )

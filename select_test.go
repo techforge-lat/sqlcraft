@@ -35,7 +35,7 @@ func TestSelectQuery_ToSQL(t *testing.T) {
 			name:  "select with required columns",
 			query: Select("first_name", "last_name").From("users").RequiredColumns("first_name"),
 			want: Result{
-				Sql:  "SELECT first_name, null FROM users",
+				Sql:  "SELECT first_name, null AS last_name FROM users",
 				Args: []any{},
 			},
 			wantErr: false,

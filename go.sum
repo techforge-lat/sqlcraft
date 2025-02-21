@@ -4,5 +4,7 @@ github.com/techforge-lat/dafi v1.1.0 h1:AeJwGI7+bJhQOeOB2+6dwzrc3MQNGGPYQr9LCrPb
 github.com/techforge-lat/dafi v1.1.0/go.mod h1:cWqoR5AVZk245MbFyMCIZkM5S/vqHU8t3odX1ecJH6I=
 github.com/techforge-lat/dafi/v2 v2.0.0 h1:2FcJMTm8tVqxlgPJ+fiHmF7ZDAhmmisJ7CuHstKBwoE=
 github.com/techforge-lat/dafi/v2 v2.0.0/go.mod h1:CU4jv8Kri4WOk6ak+QB5R4ktHVlu/Y9kq5sc9kjHrLo=
+github.com/techforge-lat/dafi/v2 v2.4.0 h1:jCR1Fsc2xmCx0iDpy7zQfiAQPmnq3KAcPAZGOpyeHJg=
+github.com/techforge-lat/dafi/v2 v2.4.0/go.mod h1:CU4jv8Kri4WOk6ak+QB5R4ktHVlu/Y9kq5sc9kjHrLo=
 github.com/techforge-lat/errortrace v0.5.1 h1:XyjHZgwabC0jYE9uhpcGuBku6KOlYs6eWgSMwUmlhDE=
 github.com/techforge-lat/errortrace v0.5.1/go.mod h1:G1N8tno7ohBjxoOPa/Sx6pPn3XtZbB9swALJB7ocyqA=

@@ -99,12 +99,11 @@ func Where(initialArgCount int, filters ...dafi.Filter) (Result, error) {
 		case dafi.Default:
 			builder.WriteString(string(filter.Field))
 		default:
-
 			builder.WriteString(string(filter.Field))
 			builder.WriteString(" ")
 			builder.WriteString(operator)
 			builder.WriteString(" $")
-			builder.WriteString(strconv.Itoa(i + 1 + initialArgCount))
+			builder.WriteString(strconv.Itoa(len(args) + 1 + initialArgCount))
 
 			args = append(args, filter.Value)
 		}

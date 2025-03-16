@@ -1,11 +1,28 @@
 package sqlcraft
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/techforge-lat/dafi/v2"
+	"github.com/techforge-lat/errortrace/v2"
+	"github.com/techforge-lat/errortrace/v2/errtype"
 )
+
+type JoinType string
+
+const (
+	InnerJoinType JoinType = "INNER JOIN"
+	LeftJoinType  JoinType = "LEFT JOIN"
+	RightJoinType JoinType = "RIGHT JOIN"
+)
+
+type Join struct {
+	Type      JoinType
+	Table     string
+	Condition string
+}
 
 type SelectQuery struct {
 	table                  string
@@ -16,6 +33,9 @@ type SelectQuery struct {
 	filters    dafi.Filters
 	sorts      dafi.Sorts
 	pagination dafi.Pagination
+
+	groups []string
+	joins  []Join
 }
 
 func Select(columns ...string) SelectQuery {
@@ -71,6 +91,28 @@ func (s SelectQuery) SQLColumnByDomainField(sqlColumnByDomainField map[string]st
 	return s
 }
 
+func (s SelectQuery) InnerJoin(table, condition string) SelectQuery {
+	return s.addJoin(InnerJoinType, table, condition)
+}
+
+func (s SelectQuery) LeftJoin(table, condition string) SelectQuery {
+	return s.addJoin(LeftJoinType, table, condition)
+}
+
+func (s SelectQuery) RightJoin(table, condition string) SelectQuery {
+	return s.addJoin(RightJoinType, table, condition)
+}
+
+func (s SelectQuery) addJoin(joinType JoinType, table, condition string) SelectQuery {
+	s.joins = append(s.joins, Join{
+		Type:      joinType,
+		Table:     table,
+		Condition: condition,
+	})
+
+	return s
+}
+
 func (s SelectQuery) ToSQL() (Result, error) {
 	if len(s.columns) == 0 {
 		return Result{}, ErrEmptyColumns
@@ -115,6 +157,15 @@ func (s SelectQuery) ToSQL() (Result, error) {
 	builder.WriteString(" FROM ")
 	builder.WriteString(s.table)
 
+	for _, join := range s.joins {
+		builder.WriteString(" ")
+		builder.WriteString(string(join.Type))
+		builder.WriteString(" ")
+		builder.WriteString(join.Table)
+		builder.WriteString(" ON ")
+		builder.WriteString(join.Condition)
+	}
+
 	args := []any{}
 	if len(s.filters) > 0 {
 		whereResult, err := WhereSafe(0, s.sqlColumnByDomainField, s.filters...)
@@ -124,6 +175,15 @@ func (s SelectQuery) ToSQL() (Result, error) {
 		args = append(args, whereResult.Args...)
 
 		builder.WriteString(whereResult.Sql)
+	}
+
+	if len(s.groups) > 0 {
+		groupSQL, err := BuildGroupBy(s.groups, s.sqlColumnByDomainField)
+		if err != nil {
+			return Result{}, err
+		}
+
+		builder.WriteString(groupSQL)
 	}
 
 	if len(s.sorts) > 0 {
@@ -183,4 +243,19 @@ func BuildPagination(pagination dafi.Pagination) string {
 	}
 
 	return builder.String()
+}
+
+func BuildGroupBy(groups []string, sqlColumnByDomainField map[string]string) (string, error) {
+	if len(sqlColumnByDomainField) > 0 {
+		for i, group := range groups {
+			sqlColumnName, ok := sqlColumnByDomainField[group]
+			if !ok {
+				return "", errortrace.OnError(ErrInvalidFieldName).WithCode(errtype.InternalError).WithTitle("Campo invalido").WithMessage(fmt.Sprintf("El campo %s no es valido para filtrar", group))
+			}
+
+			groups[i] = sqlColumnName
+		}
+	}
+
+	return " GROUP BY " + strings.Join(groups, ", "), nil
 }
